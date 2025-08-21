@@ -17,7 +17,7 @@ public class CreateBillDto {
 
     //Emisor
     private String companyName;
-    private Long companyNIT;
+    private String companyNIT;
     private String companyAddress;
     private String companyPhone;
     private String companyEmail;
