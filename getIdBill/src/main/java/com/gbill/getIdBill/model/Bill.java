@@ -1,6 +1,6 @@
-package com.gbill.getallbill.modeldto;
+package com.gbill.getIdBill.model;
 
-import com.gbill.getallbill.model.Product;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,10 +8,14 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 import java.util.List;
 
+@Entity
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class BillAllDTO {
+@AllArgsConstructor
+public class Bill {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private Long id;
     private String codeGenerator;
     private Date date;
 
@@ -29,5 +33,7 @@ public class BillAllDTO {
     private String clientEmail;
 
     //products
-    private List<ShowProductDto> listproducts;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "bill_id")
+    private List<Product> listproducts;
 }

@@ -1,0 +1,13 @@
+package com.gbill.createbill.modeldto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+public class Product {
+    private String name;
+    private int price;
+}

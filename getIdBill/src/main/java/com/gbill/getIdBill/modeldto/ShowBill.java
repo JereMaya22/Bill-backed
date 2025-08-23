@@ -1,6 +1,10 @@
-package com.gbill.getallbill.modeldto;
+package com.gbill.getIdBill.modeldto;
 
-import com.gbill.getallbill.model.Product;
+import com.gbill.getIdBill.model.Product;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,9 +13,9 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class BillAllDTO {
+@AllArgsConstructor
+public class ShowBill {
     private String codeGenerator;
     private Date date;
 
@@ -29,5 +33,5 @@ public class BillAllDTO {
     private String clientEmail;
 
     //products
-    private List<ShowProductDto> listproducts;
+    private List<Product> listproducts;
 }
