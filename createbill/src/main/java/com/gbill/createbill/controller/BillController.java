@@ -3,13 +3,14 @@ package com.gbill.createbill.controller;
 import com.gbill.createbill.modeldto.CreateBillDto;
 import com.gbill.createbill.servicce.BillService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/bill")
+@CrossOrigin(origins = "http://localhost:4200")
 public class BillController {
     private final BillService billService;
 
@@ -18,9 +19,11 @@ public class BillController {
     }
 
     @PostMapping("/createbill")
-    public ResponseEntity<String> createBill(@RequestBody CreateBillDto createBillDtoq){
+    public ResponseEntity<Map<String, String>> createBill(@RequestBody CreateBillDto createBillDtoq){
 
         billService.createBill(createBillDtoq);
-        return ResponseEntity.ok("Bill created");
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Bill created");
+        return ResponseEntity.ok(response);
     }
 }
