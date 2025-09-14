@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
 import com.gbill.createfinalconsumerbill.service.FinalConsumerBillService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/final-consumer")
 public class FinalConsumerBillController {
@@ -21,7 +23,7 @@ public class FinalConsumerBillController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<String> createFinalConsumerBill(@RequestBody CreateFinalConsumerBillDTO createFinalConsumerBillDTO){
+    public ResponseEntity<String> createFinalConsumerBill(@Valid @RequestBody CreateFinalConsumerBillDTO createFinalConsumerBillDTO){
         billService.createFinalConsumerBill(createFinalConsumerBillDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body("bill created");
     }

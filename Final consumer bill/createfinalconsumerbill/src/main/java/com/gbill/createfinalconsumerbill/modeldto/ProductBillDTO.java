@@ -1,7 +1,5 @@
 package com.gbill.createfinalconsumerbill.modeldto;
 
-import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
