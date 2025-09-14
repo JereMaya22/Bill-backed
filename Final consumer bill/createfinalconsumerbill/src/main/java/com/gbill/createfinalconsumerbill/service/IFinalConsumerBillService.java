@@ -4,6 +4,6 @@ import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
 
 public interface IFinalConsumerBillService {
     
-    void createFinalConsumerBill(CreateFinalConsumerBillDTO Bill);
+    void createFinalConsumerBill(CreateFinalConsumerBillDTO bill);
 
 }
