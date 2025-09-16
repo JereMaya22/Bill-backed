@@ -9,17 +9,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 
-@Builder
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ErrorResponse extends RuntimeException{
+public class ErrorResponse{
 
     private LocalDateTime timestamp;
     private int status;
     private String error;
     private String message;
-    private String paht;
+    private String path;
     private List<String> details;
 
 }
