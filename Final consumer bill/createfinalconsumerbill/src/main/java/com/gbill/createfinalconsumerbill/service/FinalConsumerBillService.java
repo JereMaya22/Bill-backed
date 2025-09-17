@@ -1,5 +1,6 @@
 package com.gbill.createfinalconsumerbill.service;
 
+import com.gbill.createfinalconsumerbill.exception.GenericException;
 import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
 import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
 import com.gbill.createfinalconsumerbill.repository.BillRepository;
@@ -63,6 +64,15 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
 
     @Override
     public void createFinalConsumerBill(CreateFinalConsumerBillDTO bill) {
+
+        if(bill.getGenerationCode() == null || bill.getGenerationCode().isEmpty()){
+            throw new GenericException("Generation code cannot be empty");
+        }
+
+        if(bill.getControlNumber() == null || bill.getControlNumber().isEmpty()){
+            throw new GenericException("Control number cannot be empty");
+        }
+
         billRepository.save(convertToEntity(bill));
     }
 
