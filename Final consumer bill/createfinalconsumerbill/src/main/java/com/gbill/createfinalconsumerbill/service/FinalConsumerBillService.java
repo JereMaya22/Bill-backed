@@ -1,13 +1,17 @@
 package com.gbill.createfinalconsumerbill.service;
 
-import com.gbill.createfinalconsumerbill.exception.GenericException;
+import com.gbill.createfinalconsumerbill.mapper.FinalConsumerBillMapper;
 import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
+import com.gbill.createfinalconsumerbill.model.ProductBill;
 import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
 import com.gbill.createfinalconsumerbill.repository.BillRepository;
+import com.gbill.createfinalconsumerbill.repository.ProductRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -17,63 +21,48 @@ import org.springframework.stereotype.Service;
 public class FinalConsumerBillService implements IFinalConsumerBillService{
 
     private final BillRepository billRepository;
+    private final ProductRepository productRepository;
 
-    public FinalConsumerBillService(BillRepository billRepository){
+    public FinalConsumerBillService(BillRepository billRepository, ProductRepository productRepository){
         this.billRepository = billRepository;
+        this.productRepository = productRepository;
+        
     }
+    
+    @Override
+    public void createFinalConsumerBill(CreateFinalConsumerBillDTO dto) {
 
-    private FinalConsumerBill convertToEntity(CreateFinalConsumerBillDTO createFinalConsumerBillDTO){
-        String generationCode = (createFinalConsumerBillDTO.getGenerationCode()== null || createFinalConsumerBillDTO.getGenerationCode().isBlank())
-            ? UUID.randomUUID().toString() : createFinalConsumerBillDTO.getGenerationCode();
+        //genera el codigo
+        String generationCode = Optional.ofNullable(dto.getGenerationCode())
+        .filter(s -> !s.isBlank())
+        .orElse(UUID.randomUUID().toString());
 
-        String  controlNumber = (createFinalConsumerBillDTO.getControlNumber() == null || createFinalConsumerBillDTO.getControlNumber().isBlank())
-            ?"DTE-03"+LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))+"-"+ThreadLocalRandom.current().nextLong(1_000_000_000_000_000L, 10_000_000_000_000_000L) : createFinalConsumerBillDTO.getControlNumber();
+        //genera el numero de control
+        String controlNumber = Optional.ofNullable(dto.getControlNumber())
+                .filter(s -> !s.isBlank())
+                .orElse("DTE-03" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) 
+                        + "-" + ThreadLocalRandom.current().nextLong(1_000_000_000_000_000L, 
+                            10_000_000_000_000_000L));
 
+        //Genera la fecha de creacion de la factura                                                
         LocalDateTime date = LocalDateTime.now().withNano(0);
 
-        FinalConsumerBill bill = new FinalConsumerBill(
-            null,
-            generationCode,
-            controlNumber,
-            date,
-            createFinalConsumerBillDTO.getAccount(),
-            createFinalConsumerBillDTO.getPaymentCondition(),
-            createFinalConsumerBillDTO.getCompanyName(),
-            createFinalConsumerBillDTO.getCompanyDocument(),
-            createFinalConsumerBillDTO.getCompanyAddress(),
-            createFinalConsumerBillDTO.getCompanyEmail(),
-            createFinalConsumerBillDTO.getCompanyPhone(),
-            createFinalConsumerBillDTO.getCustomerName(),
-            createFinalConsumerBillDTO.getCustomerDocument(),
-            createFinalConsumerBillDTO.getCustomerAddress(),
-            createFinalConsumerBillDTO.getCustomerEmail(),
-            createFinalConsumerBillDTO.getCustomerPhone(),
-            createFinalConsumerBillDTO.getProducts(), // por ahora, asignamos después
-            createFinalConsumerBillDTO.getNonTaxedSales(),
-            createFinalConsumerBillDTO.getExemptSales(),
-            createFinalConsumerBillDTO.getTaxedSales(),
-            createFinalConsumerBillDTO.getIva(),
-            createFinalConsumerBillDTO.getPerceivedIva(),
-            createFinalConsumerBillDTO.getWithheldIva(),
-            createFinalConsumerBillDTO.getTotalWithIva()
-        );
-    
-        return bill;
-    }
-    
+        //convierte en entidad el dto
+        FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(dto, generationCode, controlNumber, date, 0.13);
 
-    @Override
-    public void createFinalConsumerBill(CreateFinalConsumerBillDTO bill) {
+        //mapea los productos
+        List<ProductBill> products = dto.getProducts().stream()
+                .map(p -> productRepository.findById(p.getId())
+                        .orElseThrow(() -> new RuntimeException("product not found" + p.getId())))
+                .peek(prod -> prod.setFinalConsumerBill(bill))
+                .toList();
 
-        if(bill.getGenerationCode() == null || bill.getGenerationCode().isEmpty()){
-            throw new GenericException("Generation code cannot be empty");
-        }
+        //agrega los productos a la factura
+        bill.setProducts(products);
 
-        if(bill.getControlNumber() == null || bill.getControlNumber().isEmpty()){
-            throw new GenericException("Control number cannot be empty");
-        }
 
-        billRepository.save(convertToEntity(bill));
+        //guarda la factura
+        billRepository.save(bill);
     }
 
 }

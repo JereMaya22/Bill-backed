@@ -43,7 +43,7 @@ public class CreateFinalConsumerBillDTO {
 
     //receiver
     private String customerName;
-    private String customerDocument; // NIT or DUI
+    private String customerDocument;
     private String customerAddress;
     private String customerEmail;
     private String customerPhone;  
