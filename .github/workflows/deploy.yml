@@ -20,7 +20,7 @@ jobs:
           java-version: '21'
 
       - name: Build Spring Boot JAR
-        working-directory: "./createfinalconsumerbill"
+        working-directory: ./finalconsumer/createfinalconsumerbill
         run: ./mvnw clean package -DskipTests
 
       - name: Setup SSH
@@ -31,17 +31,17 @@ jobs:
       - name: Copy files to VPS
         run: |
           scp -o StrictHostKeyChecking=no \
-          "createfinalconsumerbill/target/"*.jar \
-          ${{ secrets.VPS_USER }}@${{ secrets.VPS_PASSWORD }}:/home/${{ secrets.VPS_USER }}/bill/createBill/createfinalconsumerbill.jar
+          ./finalconsumer/createfinalconsumerbill/target/*.jar \
+          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/${{ secrets.VPS_USER }}/bill/createBill/createfinalconsumerbill.jar
 
           scp -o StrictHostKeyChecking=no \
-          "createfinalconsumerbill/Dockerfile" \
-          ${{ secrets.VPS_USER }}@${{ secrets.VPS_PASSWORD }}:/home/${{ secrets.VPS_USER }}/bill/createBill/Dockerfile
+          ./finalconsumer/createfinalconsumerbill/Dockerfile \
+          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/${{ secrets.VPS_USER }}/bill/createBill/Dockerfile
 
       - name: Deploy Docker on VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_PASSWORD }} << 'EOF'
-            cd /home/${{ secrets.VPS_USER }}/app
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd /home/${{ secrets.VPS_USER }}/bill/createBill
             docker stop createfinalconsumerbill || true
             docker rm createfinalconsumerbill || true
             docker build -t createfinalconsumerbill .
