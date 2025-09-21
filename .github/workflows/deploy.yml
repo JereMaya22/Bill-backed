@@ -1,0 +1,40 @@
+name: Deploy Spring Boot Docker to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.1
+      with:
+        ssh-private-key: ${{ secrets.VPS_KEY }}
+
+    - name: Deploy to VPS with env variables
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          cd /home/bill/bill/createBill || exit
+          git reset --hard
+          git pull origin main
+          cd createfinalconsumerbill || exit
+          docker build -t createfinalconsumerbill:latest .
+          if [ \$(docker ps -q -f name=createfinalconsumerbill) ]; then
+            docker stop createfinalconsumerbill
+            docker rm createfinalconsumerbill
+          fi
+          docker run -d \
+            --name createfinalconsumerbill \
+            -p 8090:8090 \
+            -e DB_URL='${{ secrets.DB_URL }}' \
+            -e DB_USERNAME='${{ secrets.DB_USERNAME }}' \
+            -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
+            createfinalconsumerbill:latest
+        "
