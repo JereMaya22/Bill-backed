@@ -1,0 +1,42 @@
+name: Deploy Spring Boot Docker to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.1
+      with:
+        ssh-private-key: ${{ secrets.VPS_KEY }}
+
+    - name: Deploy to VPS with env variables
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+          cd /home/bill/bill/createBill || exit
+          git reset --hard
+          git pull origin main
+          # Construir la imagen Docker
+          docker build -t createbill:latest .
+          # Parar y eliminar contenedor viejo si existe
+          if [ \$(docker ps -q -f name=createbill) ]; then
+            docker stop createbill
+            docker rm createbill
+          fi
+          # Levantar contenedor nuevo con variables de entorno y puerto 8090
+          docker run -d \
+            --name createbill \
+            -p 8090:8090 \
+            -e DB_URL='${{ secrets.DB_URL }}' \
+            -e DB_USERNAME='${{ secrets.DB_USERNAME }}' \
+            -e DB_PASSWORD='${{ secrets.DB_PASSWORD }}' \
+            createbill:latest
+        "
