@@ -18,27 +18,26 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.VPS_KEY }}
 
-    - name: Deploy to VPS with env variables
+    - name: Deploy to VPS
+      env:
+        DB_URL: ${{ secrets.DB_URL }}
+        DB_USERNAME: ${{ secrets.DB_USERNAME }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'bash -s' <<'ENDSSH'
-        cd /home/bill/bill/createBill || exit
-        git reset --hard
-        git pull origin main
-        cd createfinalconsumerbill || exit
-        docker build -t createfinalconsumerbill:latest .
-        if [ $(docker ps -q -f name=createfinalconsumerbill) ]; then
-          docker stop createfinalconsumerbill
-          docker rm createfinalconsumerbill
-        fi
-        docker run -d \
-          --name createfinalconsumerbill \
-          -p 8090:8090 \
-          -e DB_URL="${DB_URL}" \
-          -e DB_USERNAME="${DB_USERNAME}" \
-          -e DB_PASSWORD="${DB_PASSWORD}" \
-          createfinalconsumerbill:latest
-        ENDSSH
-          env:
-            DB_URL: ${{ secrets.DB_URL }}
-            DB_USERNAME: ${{ secrets.DB_USERNAME }}
-            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "bash -s" <<'EOF'
+          cd /home/bill/bill/createBill || exit
+          git reset --hard
+          git pull origin main
+          cd createfinalconsumerbill || exit
+          docker build -t createfinalconsumerbill:latest .
+          if [ \$(docker ps -q -f name=createfinalconsumerbill) ]; then
+            docker stop createfinalconsumerbill
+            docker rm createfinalconsumerbill
+          fi
+          docker run -d \
+            --name createfinalconsumerbill \
+            -p 8090:8090 \
+            -e DB_URL=\"$DB_URL\" \
+            -e DB_USERNAME=\"$DB_USERNAME\" \
+            -e DB_PASSWORD=\"$DB_PASSWORD\" \
+            createfinalconsumerbill:latest
