@@ -20,7 +20,7 @@ jobs:
           java-version: '21'
 
       - name: Build Spring Boot JAR
-        working-directory: "./Final Consumer Bill/createfinalconsumerbill"
+        working-directory: "./createfinalconsumerbill"
         run: ./mvnw clean package -DskipTests
 
       - name: Setup SSH
@@ -31,11 +31,11 @@ jobs:
       - name: Copy files to VPS
         run: |
           scp -o StrictHostKeyChecking=no \
-          "Final Consumer Bill/createfinalconsumerbill/target/"*.jar \
+          "createfinalconsumerbill/target/"*.jar \
           ${{ secrets.VPS_USER }}@${{ secrets.VPS_PASSWORD }}:/home/${{ secrets.VPS_USER }}/bill/createBill/createfinalconsumerbill.jar
 
           scp -o StrictHostKeyChecking=no \
-          "Final Consumer Bill/createfinalconsumerbill/Dockerfile" \
+          "createfinalconsumerbill/Dockerfile" \
           ${{ secrets.VPS_USER }}@${{ secrets.VPS_PASSWORD }}:/home/${{ secrets.VPS_USER }}/bill/createBill/Dockerfile
 
       - name: Deploy Docker on VPS
