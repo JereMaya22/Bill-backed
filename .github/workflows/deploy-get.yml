@@ -20,7 +20,7 @@ jobs:
           java-version: '21'
       
       - name: Build Spring Boot JAR
-        working-directory: ./finalconsumer/getfinalconsumerbill
+        working-directory: ./finalconsumer/getallfinalconsumerbill
         run: ./mvnw clean package -DskipTests
     
       - name: Setup SSH
