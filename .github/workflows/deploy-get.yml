@@ -1,4 +1,4 @@
-name: Deploy Spring Boot getfinalconsumerbill to VPS
+name: Deploy Spring Boot getallfinalconsumerbill to VPS
 
 on:
   push:
@@ -35,24 +35,24 @@ jobs:
       - name: Copy files to VPS
         run: |
           scp -o StrictHostKeyChecking=no \
-          ./finalconsumer/getfinalconsumerbill/target/*.jar \
+          ./finalconsumer/getallfinalconsumerbill/target/*.jar \
           ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/${{ secrets.VPS_USER }}/bill/getBill/getfinalconsumerbill.jar
     
           scp -o StrictHostKeyChecking=no \
-          ./finalconsumer/getfinalconsumerbill/Dockerfile \
+          ./finalconsumer/getallfinalconsumerbill/Dockerfile \
           ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/${{ secrets.VPS_USER }}/bill/getBill/Dockerfile
     
       - name: Deploy Docker on VPS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd /home/${{ secrets.VPS_USER }}/bill/getBill
-            docker stop getfinalconsumerbill || true
-            docker rm getfinalconsumerbill || true
-            docker build -t getfinalconsumerbill .
-            docker run -d --name getfinalconsumerbill \
-              -p 8080:8080 \
+            docker stop getallfinalconsumerbill || true
+            docker rm getallfinalconsumerbill || true
+            docker build -t getallfinalconsumerbill .
+            docker run -d --name getallfinalconsumerbill \
+              -p 8090:8090 \
               -e DB_URL=${{ secrets.DB_URL }} \
               -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              getfinalconsumerbill
+              getallfinalconsumerbill
           EOF
