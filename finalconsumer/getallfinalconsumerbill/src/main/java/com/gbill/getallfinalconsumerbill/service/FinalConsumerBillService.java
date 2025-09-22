@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.gbill.getallfinalconsumerbill.exception.NotFoundException;
 import com.gbill.getallfinalconsumerbill.mapper.FinalConsumerBillMapper;
 import com.gbill.getallfinalconsumerbill.repository.IBillRepository;
 
@@ -22,6 +23,11 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
 
     @Override
     public List<ShowBillDto> getAllBill() {
+
+        if(billRepository.findAll().isEmpty() || billRepository.findAll() == null){
+            throw new NotFoundException("List empty");
+        }
+
         return billRepository.findAll().stream()
             .map(FinalConsumerBillMapper::toDto)
             .collect(Collectors.toList());
@@ -30,6 +36,10 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
     @Override
     public Optional<ShowBillDto> getBygenerationCode(String generationCode) {
         
+        if(billRepository.findByGenerationCode(generationCode).isEmpty() || billRepository.findByGenerationCode(generationCode) == null){
+            throw new NotFoundException("La factura con el codgio " + generationCode + " no se encontro.");
+        }
+
         return billRepository.findByGenerationCode(generationCode)
             .map(FinalConsumerBillMapper::toDto);
     }

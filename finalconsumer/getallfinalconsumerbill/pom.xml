@@ -75,7 +75,7 @@
 		<dependency>
 			<groupId>com.github.xsismadn3ss</groupId>
 			<artifactId>shared-dtos</artifactId>
-			<version>db1d6369c8ff187817b1a7e4a0e0ad8e3f8e11b1</version>
+			<version>76bd9b76c4d10d743faa222675d27bdaf9605d51</version>
 		</dependency>
 
 		<dependency>
