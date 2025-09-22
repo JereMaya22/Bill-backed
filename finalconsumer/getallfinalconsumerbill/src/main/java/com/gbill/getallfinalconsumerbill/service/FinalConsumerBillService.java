@@ -1,6 +1,7 @@
 package com.gbill.getallfinalconsumerbill.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -27,15 +28,10 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
     }
 
     @Override
-    public ShowBillDto getBygenerationCode() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getBygenerationCode'");
-    }
-
-    @Override
-    public ShowBillDto getBycontrolNumber() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getBycontrolNumber'");
+    public Optional<ShowBillDto> getBygenerationCode(String generationCode) {
+        
+        return billRepository.findByGenerationCode(generationCode)
+            .map(FinalConsumerBillMapper::toDto);
     }
 
 }
