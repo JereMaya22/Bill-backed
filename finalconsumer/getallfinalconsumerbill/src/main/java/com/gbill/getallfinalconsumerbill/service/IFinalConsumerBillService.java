@@ -6,4 +6,6 @@ import shareddtos.billmodule.ShowBillDto;
 
 public interface IFinalConsumerBillService {
     List<ShowBillDto> getAllBill();
+    ShowBillDto getBygenerationCode();
+    ShowBillDto getBycontrolNumber();
 }

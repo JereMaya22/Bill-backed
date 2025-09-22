@@ -7,5 +7,5 @@ import com.gbill.getallfinalconsumerbill.model.FinalConsumerBill;
 
 @Repository
 public interface IBillRepository extends JpaRepository<FinalConsumerBill,Long>{
-
+    
 }
