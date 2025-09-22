@@ -18,6 +18,10 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+
+      - name: Grant execute permission for mvnw
+        run: chmod +x ./mvnw
+        working-directory: ./getallfinalconsumerbill
       
       - name: Build Spring Boot JAR
         working-directory: ./finalconsumer/getallfinalconsumerbill
