@@ -5,20 +5,33 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.gbill.getallfinalconsumerbill.clients.ValidationService;
 import com.gbill.getallfinalconsumerbill.exception.NotFoundException;
 import com.gbill.getallfinalconsumerbill.mapper.FinalConsumerBillMapper;
 import com.gbill.getallfinalconsumerbill.repository.IBillRepository;
 
 import shareddtos.billmodule.ShowBillDto;
+import shareddtos.usersmodule.auth.SimpleUserDto;
+
 import java.util.stream.Collectors;
 
 @Service
-public class FinalConsumerBillService implements IFinalConsumerBillService{
+public class FinalConsumerBillService implements IFinalConsumerBillService, ValidationService{
 
     private final IBillRepository billRepository;
+    private final ValidationService validationService;
 
-    public FinalConsumerBillService(IBillRepository BillRepository){
+    public FinalConsumerBillService(IBillRepository BillRepository, ValidationService validationService){
         this.billRepository = BillRepository;
+        this.validationService = validationService;
+    }
+
+    @Override
+    public SimpleUserDto validation(String token) {
+        
+        SimpleUserDto simpleUserDto = validationService.validation(token);
+
+        return simpleUserDto;
     }
 
     @Override
@@ -43,5 +56,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         return billRepository.findByGenerationCode(generationCode)
             .map(FinalConsumerBillMapper::toDto);
     }
+
+
 
 }

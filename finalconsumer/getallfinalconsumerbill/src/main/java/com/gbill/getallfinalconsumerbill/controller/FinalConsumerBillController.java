@@ -1,18 +1,18 @@
 package com.gbill.getallfinalconsumerbill.controller;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.gbill.getallfinalconsumerbill.service.FinalConsumerBillService;
-
-import shareddtos.billmodule.ShowBillDto;
-
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.gbill.getallfinalconsumerbill.service.FinalConsumerBillService;
+
+import shareddtos.billmodule.ShowBillDto;
 
 
 @RestController
@@ -26,22 +26,17 @@ public class FinalConsumerBillController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<ShowBillDto>> getAllBills(){
-        
+    public ResponseEntity<List<ShowBillDto>> getAllBills(@RequestHeader("Authorization") String token){
+        billService.validation(token);
         List<ShowBillDto> bills = billService.getAllBill();
-
         return ResponseEntity.ok().body(bills);
     }
 
     @GetMapping("/generation-code/{code}")
-    public ResponseEntity<Optional<ShowBillDto>> getMethodName(@PathVariable String code) {
-
+    public ResponseEntity<Optional<ShowBillDto>> getMethodName(@RequestHeader("Authorization") String token, @PathVariable String code) {
+        billService.validation(token);
         Optional<ShowBillDto> showBillDto = billService.getBygenerationCode(code);
-
         return ResponseEntity.ok().body(showBillDto);
     }
-    
-    
-    
 
 }
