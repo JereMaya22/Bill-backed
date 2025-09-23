@@ -1,12 +1,5 @@
 package com.gbill.createfinalconsumerbill.service;
 
-import com.gbill.createfinalconsumerbill.mapper.FinalConsumerBillMapper;
-import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
-import com.gbill.createfinalconsumerbill.model.ProductBill;
-import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
-import com.gbill.createfinalconsumerbill.repository.BillRepository;
-import com.gbill.createfinalconsumerbill.repository.ProductRepository;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -17,20 +10,32 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 
+import com.gbill.createfinalconsumerbill.mapper.FinalConsumerBillMapper;
+import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
+import com.gbill.createfinalconsumerbill.model.ProductBill;
+import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
+import com.gbill.createfinalconsumerbill.repository.BillRepository;
+import com.gbill.createfinalconsumerbill.repository.ProductRepository;
+import com.gbill.createfinalconsumerbill.clients.ValidationService;
+import shareddtos.usersmodule.auth.SimpleUserDto;
+
 @Service
 public class FinalConsumerBillService implements IFinalConsumerBillService{
 
     private final BillRepository billRepository;
     private final ProductRepository productRepository;
+    private final ValidationService validationService;
 
-    public FinalConsumerBillService(BillRepository billRepository, ProductRepository productRepository){
+    public FinalConsumerBillService(BillRepository billRepository, ProductRepository productRepository, ValidationService validationService){
         this.billRepository = billRepository;
         this.productRepository = productRepository;
-        
+        this.validationService = validationService;
     }
-    
+
     @Override
-    public void createFinalConsumerBill(CreateFinalConsumerBillDTO dto) {
+    public CreateFinalConsumerBillDTO createFinalConsumerBill(CreateFinalConsumerBillDTO dto, String token) {
+
+        SimpleUserDto user = validationService.ValidationSession(token);
 
         //genera el codigo
         String generationCode = Optional.ofNullable(dto.getGenerationCode())
@@ -49,6 +54,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
 
         //convierte en entidad el dto
         FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(dto, generationCode, controlNumber, date, 0.13);
+        bill.setAccount(user.getFirstName() +" "+ user.getLastName()); // Asigna el ID del usuario como el account
 
         //mapea los productos
         List<ProductBill> products = dto.getProducts().stream()
@@ -63,6 +69,8 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
 
         //guarda la factura
         billRepository.save(bill);
+
+        return dto;
     }
 
 }

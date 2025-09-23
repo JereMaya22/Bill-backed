@@ -3,8 +3,6 @@ package com.gbill.createfinalconsumerbill.modeldto;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.gbill.createfinalconsumerbill.model.ProductBill;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
@@ -24,7 +22,7 @@ public class CreateFinalConsumerBillDTO {
     //@Pattern(regexp = "DTE-03-[0-9]{8}-[0-9]{15}", message = "El numero de control no cumple con el formato")
     private String controlNumber; // DTE-03-12345678-000000000000001
     private LocalDateTime billGenerationDate;
-    @NotBlank(message = "La cuenta de usuario no puede estar vacia")
+
     private String account;
     @NotBlank(message = "La condicion de pago no puede ir vacia")
     private String paymentCondition;
@@ -50,7 +48,7 @@ public class CreateFinalConsumerBillDTO {
 
     //products
     @NotEmpty(message = "Debe de almenos llevar un producto")
-    private List<ProductBill> products;
+    private List<ProductBillDTO> products;
 
     // Totals
     @PositiveOrZero(message = "Las ventas no gravadas deben ser mayor o igual a 0")
