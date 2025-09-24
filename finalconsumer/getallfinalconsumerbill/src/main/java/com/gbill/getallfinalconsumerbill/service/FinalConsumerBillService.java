@@ -47,14 +47,12 @@ public class FinalConsumerBillService implements IFinalConsumerBillService, Vali
     }
 
     @Override
-    public Optional<ShowBillDto> getBygenerationCode(String generationCode) {
-        
-        if(billRepository.findByGenerationCode(generationCode).isEmpty() || billRepository.findByGenerationCode(generationCode) == null){
-            throw new NotFoundException("La factura con el codgio " + generationCode + " no se encontro.");
-        }
+    public ShowBillDto getBygenerationCode(String generationCode) {
 
         return billRepository.findByGenerationCode(generationCode)
-            .map(FinalConsumerBillMapper::toDto);
+                .map(FinalConsumerBillMapper::toDto)
+                .orElseThrow(() -> new NotFoundException(
+                    "La factura con el codigo " + generationCode +" no se encontro"));
     }
 
 

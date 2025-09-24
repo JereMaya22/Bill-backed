@@ -7,5 +7,5 @@ import shareddtos.billmodule.ShowBillDto;
 
 public interface IFinalConsumerBillService {
     List<ShowBillDto> getAllBill();
-    Optional<ShowBillDto> getBygenerationCode(String generationCode);
+    ShowBillDto getBygenerationCode(String generationCode);
 }

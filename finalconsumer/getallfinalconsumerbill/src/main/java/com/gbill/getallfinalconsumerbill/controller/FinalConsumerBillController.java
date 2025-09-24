@@ -33,9 +33,9 @@ public class FinalConsumerBillController {
     }
 
     @GetMapping("/generation-code/{code}")
-    public ResponseEntity<Optional<ShowBillDto>> getMethodName(@RequestHeader("Authorization") String token, @PathVariable String code) {
+    public ResponseEntity<ShowBillDto> getMethodName(@RequestHeader("Authorization") String token, @PathVariable String code) {
         billService.validation(token);
-        Optional<ShowBillDto> showBillDto = billService.getBygenerationCode(code);
+        ShowBillDto showBillDto = billService.getBygenerationCode(code);
         return ResponseEntity.ok().body(showBillDto);
     }
 
