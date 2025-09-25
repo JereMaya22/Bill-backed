@@ -44,15 +44,15 @@ public class FinalConsumerBill {
 
     //products
     @OneToMany(mappedBy = "finalConsumerBill", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductBill> products;
+    private List<BillItem> products;
 
     // Totals
-    private double nonTaxedSales;
-    private double exemptSales;
-    private double taxedSales;
-    private double iva; // 13% de IVA
-    private double perceivedIva;
-    private double withheldIva;
-    private double totalWithIva;
+    private Double nonTaxedSales;
+    private Double exemptSales;
+    private Double taxedSales;
+    private Double iva; // 13% de IVA
+    private Double perceivedIva;
+    private Double withheldIva;
+    private Double totalWithIva;
 
 }

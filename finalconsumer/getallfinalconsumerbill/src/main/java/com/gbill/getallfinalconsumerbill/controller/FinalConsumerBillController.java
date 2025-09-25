@@ -1,7 +1,6 @@
 package com.gbill.getallfinalconsumerbill.controller;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.gbill.getallfinalconsumerbill.service.FinalConsumerBillService;
 
-import shareddtos.billmodule.ShowBillDto;
+import shareddtos.billmodule.bill.ShowBillDto;
+
 
 
 @RestController

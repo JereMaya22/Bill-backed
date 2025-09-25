@@ -4,12 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @Data
+@AllArgsConstructor
 @NoArgsConstructor
-public class ProductBillDTO {
-    private Long id;
-    private String name;
-    private Integer quantity;
-    private Double price;
+public class CreateBillItemRequestDTO {
+    private Long productId;
+    private int requestedQuantity;
 }

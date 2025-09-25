@@ -5,8 +5,8 @@ import java.util.stream.Collectors;
 
 import com.gbill.getallfinalconsumerbill.model.FinalConsumerBill;
 
-import shareddtos.billmodule.ProductBillDTO;
-import shareddtos.billmodule.ShowBillDto;
+import shareddtos.billmodule.BillItem.BillItemDTO;
+import shareddtos.billmodule.bill.ShowBillDto;
 
 public class FinalConsumerBillMapper {
 
@@ -30,14 +30,15 @@ public class FinalConsumerBillMapper {
                 finalConsumerBill.getCustomerPhone(),
                 finalConsumerBill.getProducts().stream().map(
                     productos -> {
-                        ProductBillDTO productDto = new ProductBillDTO();
-                        productDto.setId(productos.getId());
+                        BillItemDTO productDto = new BillItemDTO();
+                        productDto.setProductId(productos.getProductId());
                         productDto.setName(productos.getName());
-                        productDto.setQuantity(productos.getQuantity());
+                        productDto.setRequestedQuantity(productos.getRequestedQuantity());
                         productDto.setPrice(productos.getPrice());
+                        productDto.setSubTotal(productos.getSubTotal());
                         return productDto;
                     }
-                ).collect(Collectors.toList()), // Ahora se pasa la lista de DTOs de productos
+                ).collect(Collectors.toList()),
                 finalConsumerBill.getNonTaxedSales(),
                 finalConsumerBill.getExemptSales(),
                 finalConsumerBill.getTaxedSales(),
@@ -48,8 +49,6 @@ public class FinalConsumerBillMapper {
 
             ); 
             
-            // Se elimina la lógica incorrecta que modificaba la entidad de entrada y no usaba los productos mapeados.
-
             return showBillDto;
         }
 }

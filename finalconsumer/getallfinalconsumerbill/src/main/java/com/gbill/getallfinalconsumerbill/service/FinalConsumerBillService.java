@@ -1,7 +1,6 @@
 package com.gbill.getallfinalconsumerbill.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -10,7 +9,7 @@ import com.gbill.getallfinalconsumerbill.exception.NotFoundException;
 import com.gbill.getallfinalconsumerbill.mapper.FinalConsumerBillMapper;
 import com.gbill.getallfinalconsumerbill.repository.IBillRepository;
 
-import shareddtos.billmodule.ShowBillDto;
+import shareddtos.billmodule.bill.ShowBillDto;
 import shareddtos.usersmodule.auth.SimpleUserDto;
 
 import java.util.stream.Collectors;

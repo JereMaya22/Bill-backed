@@ -43,7 +43,7 @@ public class FinalConsumerBill {
 
     //products
     @OneToMany(mappedBy = "finalConsumerBill", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductBill> products;
+    private List<BillItem> products;
 
     // Totals
     private double nonTaxedSales;

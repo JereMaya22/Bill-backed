@@ -1,7 +1,8 @@
-package com.gbill.createfinalconsumerbill.model;
+package com.gbill.getallfinalconsumerbill.model;
 
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,17 +16,20 @@ import lombok.NoArgsConstructor;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductBill {
-
+public class BillItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private Long productId;
     private String name;
-    private Integer quantity;
+    private int requestedQuantity;
     private Double price;
+    private Double subTotal;
 
-    @ManyToOne
-    @JoinColumn(name = "final_consumer_bill_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bill_id")
     private FinalConsumerBill finalConsumerBill;
 
+
 }
+
