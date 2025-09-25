@@ -31,6 +31,7 @@ public class FinalConsumerBillMapper {
                 finalConsumerBill.getProducts().stream().map(
                     productos -> {
                         BillItemDTO productDto = new BillItemDTO();
+                        productDto.setId(productos.getId());
                         productDto.setProductId(productos.getProductId());
                         productDto.setName(productos.getName());
                         productDto.setRequestedQuantity(productos.getRequestedQuantity());

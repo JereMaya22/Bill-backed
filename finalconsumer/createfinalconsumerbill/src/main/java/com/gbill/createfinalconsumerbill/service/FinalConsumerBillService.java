@@ -125,7 +125,11 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(createFinalConsumerBillDTO, generationCode
         , controlNumber, date, ivaRate, user.getFirstName() +" "+ user.getLastName(), totalWithIva
         ,productItem);
-        
+        bill.setCompanyName("Becky's Florist S.A. de C.V.");
+        bill.setCompanyDocument("0614-987654-101-3");
+        bill.setCompanyAddress("Av. Las Flores #123, San Salvador");
+        bill.setCompanyEmail("facturacion@beckysflorist.com");
+        bill.setCompanyPhone("2222-3333");
         bill.setNonTaxedSales(createFinalConsumerBillDTO.getNonTaxedSales());
         bill.setExemptSales(createFinalConsumerBillDTO.getExemptSales());
         bill.setTaxedSales(totalWithoutIva);

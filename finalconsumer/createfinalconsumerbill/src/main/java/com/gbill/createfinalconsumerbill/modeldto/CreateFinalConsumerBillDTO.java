@@ -16,15 +16,10 @@ public class CreateFinalConsumerBillDTO {
     @NotBlank(message = "La condicion de pago no puede ir vacia")
     private String paymentCondition;
     //transmitter
-    @NotBlank(message = "El nombre de la compañia no debe de estar en blanco")
     private String companyName;
-    @NotBlank(message = "El documento de la compañia no debe de estar en blanco")
     private String companyDocument; // NIT
-    @NotBlank(message = "El direccion de la compañia no debe de estar en blanco")
     private String companyAddress;
-    @NotBlank(message = "El email de la compañia no debe de estar en blanco")
     private String companyEmail;
-    @NotBlank(message = "El telefono de la compañia no debe de estar en blanco")
     private String companyPhone;    
 
     //receiver
