@@ -16,8 +16,10 @@ import shareddtos.billmodule.bill.ShowBillDto;
 
 public class FinalConsumerBillMapper {
     public static FinalConsumerBill toEntity(CreateFinalConsumerBillDTO dto, String generationCode
-    , String controlNumber, LocalDateTime date, Double iva, String account, Double totalWithIva
-    , List<CreateBillItemDTO> items) {
+    , String controlNumber, LocalDateTime date, Double iva, String account,
+    String companyName, String companyDocument, String companyAddress, String companyEmail, String companyPhone,
+    Double nonTaxedSales, Double exemptSales, Double taxedSales, Double perceivedIva,
+    Double totalWithIva, List<CreateBillItemDTO> items) {
         return new FinalConsumerBill(
             null,
             generationCode,
@@ -25,11 +27,11 @@ public class FinalConsumerBillMapper {
             date,
             account,
             dto.getPaymentCondition(),
-            dto.getCompanyName(),
-            dto.getCompanyDocument(),
-            dto.getCompanyAddress(),
-            dto.getCompanyEmail(),
-            dto.getCompanyPhone(),
+            companyName,
+            companyDocument,
+            companyAddress,
+            companyEmail,
+            companyPhone,
             dto.getCustomerName(),
             dto.getCustomerDocument(),
             dto.getCustomerAddress(),
@@ -45,11 +47,11 @@ public class FinalConsumerBillMapper {
                     billItem.getSubTotal(),
                     null
             )).collect(Collectors.toList()),
-            dto.getNonTaxedSales(),
-            dto.getExemptSales(),
-            dto.getTaxedSales(),
+            nonTaxedSales,  // Ahora se usa el parámetro
+            exemptSales,    // Ahora se usa el parámetro
+            taxedSales,
             iva,
-            dto.getPerceivedIva(),
+            perceivedIva,
             dto.getWithheldIva(),
             totalWithIva
         );
@@ -76,12 +78,7 @@ public class FinalConsumerBillMapper {
                         return requestDTO;
                     }
                 ).collect(Collectors.toList()),
-                finalConsumerBill.getNonTaxedSales(),
-                finalConsumerBill.getExemptSales(),
-                finalConsumerBill.getTaxedSales(),
-                finalConsumerBill.getPerceivedIva(),
                 finalConsumerBill.getWithheldIva()
-
             ); 
             
         return consumerBillDTO;
