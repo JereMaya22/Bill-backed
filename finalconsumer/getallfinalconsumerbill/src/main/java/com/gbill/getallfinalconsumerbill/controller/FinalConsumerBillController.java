@@ -27,15 +27,13 @@ public class FinalConsumerBillController {
 
     @GetMapping("/all")
     public ResponseEntity<List<ShowBillDto>> getAllBills(@RequestHeader("Authorization") String token){
-        billService.validation(token);
-        List<ShowBillDto> bills = billService.getAllBill();
+        List<ShowBillDto> bills = billService.getAllBill(token);
         return ResponseEntity.ok().body(bills);
     }
 
     @GetMapping("/generation-code/{code}")
     public ResponseEntity<ShowBillDto> getMethodName(@RequestHeader("Authorization") String token, @PathVariable String code) {
-        billService.validation(token);
-        ShowBillDto showBillDto = billService.getBygenerationCode(code);
+        ShowBillDto showBillDto = billService.getBygenerationCode(code,token);
         return ResponseEntity.ok().body(showBillDto);
     }
 

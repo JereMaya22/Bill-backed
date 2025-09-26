@@ -5,17 +5,21 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.gbill.getallfinalconsumerbill.clients.ValidationService;
+import com.gbill.getallfinalconsumerbill.exception.ConnectionFaildAuthenticationException;
+import com.gbill.getallfinalconsumerbill.exception.InvalidTokenException;
+import com.gbill.getallfinalconsumerbill.exception.InvalidUserException;
 import com.gbill.getallfinalconsumerbill.exception.NotFoundException;
 import com.gbill.getallfinalconsumerbill.mapper.FinalConsumerBillMapper;
 import com.gbill.getallfinalconsumerbill.repository.IBillRepository;
 
+import feign.FeignException;
 import shareddtos.billmodule.bill.ShowBillDto;
 import shareddtos.usersmodule.auth.SimpleUserDto;
 
 import java.util.stream.Collectors;
 
 @Service
-public class FinalConsumerBillService implements IFinalConsumerBillService, ValidationService{
+public class FinalConsumerBillService implements IFinalConsumerBillService{
 
     private final IBillRepository billRepository;
     private final ValidationService validationService;
@@ -25,20 +29,35 @@ public class FinalConsumerBillService implements IFinalConsumerBillService, Vali
         this.validationService = validationService;
     }
 
-    @Override
-    public SimpleUserDto validation(String token) {
-        
-        SimpleUserDto simpleUserDto = validationService.validation(token);
+    private void validationUser(String token){
+        SimpleUserDto user;
+        if (token == null || token.isEmpty()) {
+            throw new InvalidTokenException("Token is missing or empty.");
+        }
+        try {
+            user = validationService.validationSession(token);
+        } catch (FeignException.Unauthorized e) {
+            throw new InvalidTokenException("Token is expired or invalid.");
+        } catch (FeignException e) {
+            throw new ConnectionFaildAuthenticationException("Error communicating with validation service.");
+        } catch (Exception e) {
+            throw new ConnectionFaildAuthenticationException("An unexpected error occurred during token validation.");
+        }
 
-        return simpleUserDto;
+        if (user == null || user.getId() == null) {
+            throw new InvalidUserException("Invalid or unauthorized user session.");
+        }
     }
 
     @Override
-    public List<ShowBillDto> getAllBill() {
+    public List<ShowBillDto> getAllBill(String token) {
 
+        
         if(billRepository.findAll().isEmpty() || billRepository.findAll() == null){
             throw new NotFoundException("List empty");
         }
+
+        validationUser(token);
 
         return billRepository.findAll().stream()
             .map(FinalConsumerBillMapper::toDto)
@@ -46,7 +65,9 @@ public class FinalConsumerBillService implements IFinalConsumerBillService, Vali
     }
 
     @Override
-    public ShowBillDto getBygenerationCode(String generationCode) {
+    public ShowBillDto getBygenerationCode(String generationCode, String token) {
+
+        validationUser(token);
 
         return billRepository.findByGenerationCode(generationCode)
                 .map(FinalConsumerBillMapper::toDto)

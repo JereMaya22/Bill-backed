@@ -18,13 +18,14 @@ import com.gbill.createfinalconsumerbill.modeldto.CreateBillItemRequestDTO;
 import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
 import com.gbill.createfinalconsumerbill.repository.BillRepository;
 import com.gbill.createfinalconsumerbill.clients.ValidationService;
+import com.gbill.createfinalconsumerbill.exception.ConnectionFaildAuthenticationException;
+import com.gbill.createfinalconsumerbill.exception.InvalidTokenException;
+import com.gbill.createfinalconsumerbill.exception.InvalidUserException;
 
 import shareddtos.billmodule.bill.ShowBillDto;
 import shareddtos.billmodule.product.ProductBillDTO;
 import shareddtos.usersmodule.auth.SimpleUserDto;
 import feign.FeignException;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import com.gbill.createfinalconsumerbill.model.BillItem;
 
 @Service
@@ -47,24 +48,39 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
     @Override
     public ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO createFinalConsumerBillDTO, String token) {
 
-
         SimpleUserDto user;
+        if (token == null || token.isEmpty()) {
+            throw new InvalidTokenException("Token is missing or empty.");
+        }
         try {
             user = validationService.ValidationSession(token);
         } catch (FeignException.Unauthorized e) {
-            if (token == null || token.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is missing or empty.");
-            } else {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is expired or invalid.");
-            }
+            throw new InvalidTokenException("Token is expired or invalid.");
         } catch (FeignException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error communicating with validation service.", e);
+            throw new ConnectionFaildAuthenticationException("Error communicating with validation service.");
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred during token validation.", e);
+            throw new ConnectionFaildAuthenticationException("An unexpected error occurred during token validation.");
         }
 
         if (user == null || user.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or unauthorized user session.");
+            throw new InvalidUserException("Invalid or unauthorized user session.");
+        }
+    
+        // Verificar y rellenar campos de cliente si están vacíos
+        if (createFinalConsumerBillDTO.getCustomerName() == null || createFinalConsumerBillDTO.getCustomerName().trim().isEmpty()) {
+            createFinalConsumerBillDTO.setCustomerName("Consumidor Final");
+        }
+        if (createFinalConsumerBillDTO.getCustomerDocument() == null || createFinalConsumerBillDTO.getCustomerDocument().trim().isEmpty()) {
+            createFinalConsumerBillDTO.setCustomerDocument("99999999-9");
+        }
+        if (createFinalConsumerBillDTO.getCustomerAddress() == null || createFinalConsumerBillDTO.getCustomerAddress().trim().isEmpty()) {
+            createFinalConsumerBillDTO.setCustomerAddress("Dirección Genérica");
+        }
+        if (createFinalConsumerBillDTO.getCustomerEmail() == null || createFinalConsumerBillDTO.getCustomerEmail().trim().isEmpty()) {
+            createFinalConsumerBillDTO.setCustomerEmail("consumidor@example.com");
+        }
+        if (createFinalConsumerBillDTO.getCustomerPhone() == null || createFinalConsumerBillDTO.getCustomerPhone().trim().isEmpty()) {
+            createFinalConsumerBillDTO.setCustomerPhone("0000-0000"); 
         }
 
         //genera el codigo
@@ -95,6 +111,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         //mapeamos los ids
         Map<Long, ProductBillDTO> productMap = products.stream().collect(Collectors.toMap(ProductBillDTO::getId, p -> p));
 
+        //mapeamos los productos para pasarlos a una lista de CreateBillItemDTO
         List<CreateBillItemDTO> productItem = createFinalConsumerBillDTO.getProducts().stream()
             .map(item -> {
 
@@ -113,7 +130,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         
             
 
-        // Calculamos los totales
+        // calculo de totales
         Double totalWithoutIva = 0.0;
         for (CreateBillItemDTO item : productItem) {
             totalWithoutIva += item.getSubTotal();
@@ -121,28 +138,35 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         perceivedIva = totalWithoutIva * ivaRate;
         totalWithIva = totalWithoutIva + perceivedIva;
 
-        //convierte en entidad el dto
-        FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(createFinalConsumerBillDTO, generationCode
-        , controlNumber, date, ivaRate, user.getFirstName() +" "+ user.getLastName(), totalWithIva
-        ,productItem);
-        bill.setCompanyName("Becky's Florist S.A. de C.V.");
-        bill.setCompanyDocument("0614-987654-101-3");
-        bill.setCompanyAddress("Av. Las Flores #123, San Salvador");
-        bill.setCompanyEmail("facturacion@beckysflorist.com");
-        bill.setCompanyPhone("2222-3333");
-        bill.setNonTaxedSales(createFinalConsumerBillDTO.getNonTaxedSales());
-        bill.setExemptSales(createFinalConsumerBillDTO.getExemptSales());
-        bill.setTaxedSales(totalWithoutIva);
-        bill.setPerceivedIva(perceivedIva);
-        bill.setWithheldIva(createFinalConsumerBillDTO.getWithheldIva());
-        bill.setTotalWithIva(totalWithIva);
+        //conversion de dto a entidad
+        FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(
+            createFinalConsumerBillDTO,
+            generationCode,
+            controlNumber,
+            date,
+            ivaRate,
+            user.getFirstName() +" "+ user.getLastName(),
+            "Becky's Florist S.A. de C.V.",
+            "0614-987654-101-3",
+            "Av. Las Flores #123, San Salvador",
+            "facturacion@beckysflorist.com",
+            "2222-3333",
+            0.0,
+            0.0,
+            totalWithoutIva, 
+            perceivedIva,
+            totalWithIva,
+            productItem
+        );
 
-        // Asignar la FinalConsumerBill a cada BillItem
+
+        // A cada billitem asignamos su relacion con finalconsumer
         for (BillItem item : bill.getProducts()) {
             item.setSubTotal(item.getPrice() * item.getRequestedQuantity());
             item.setFinalConsumerBill(bill);
         }
-        //guarda la factura
+
+        //guardamos la factura
         billRepository.save(bill);
 
         return FinalConsumerBillMapper.toShowBillDto(bill);

@@ -10,5 +10,5 @@ import shareddtos.usersmodule.auth.SimpleUserDto;
 public interface ValidationService {
 
     @GetMapping("header")
-    SimpleUserDto validation(@RequestHeader(value = "Authorization", required = true) String token); 
+    SimpleUserDto validationSession(@RequestHeader(value = "Authorization", required = true) String token); 
 }
