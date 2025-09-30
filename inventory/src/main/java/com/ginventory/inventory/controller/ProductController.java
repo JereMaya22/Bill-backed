@@ -41,6 +41,12 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
+    @GetMapping("/by-ids")
+    public ResponseEntity<List<ShowProductDTO>> getProductsByIds(@RequestParam List<Long> ids) {
+        List<ShowProductDTO> products = productService.getProductsByIds(ids);
+        return ResponseEntity.ok(products);
+    }
+
     @GetMapping("/category/{category}")
     public ResponseEntity<List<ShowProductDTO>> getProductsByCategory(@PathVariable String category) {
         List<ShowProductDTO> products = productService.getByCategory(category);
