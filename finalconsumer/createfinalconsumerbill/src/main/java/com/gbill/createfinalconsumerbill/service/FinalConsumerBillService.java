@@ -47,7 +47,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
     }
 
     @Override
-    public ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO createFinalConsumerBillDTO, String token) {
+    public ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO createFinalConsumerBillDTO) {
 
         
     
