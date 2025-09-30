@@ -47,9 +47,25 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
     }
 
     @Override
-    public ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO createFinalConsumerBillDTO) {
+    public ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO createFinalConsumerBillDTO, String token) {
 
-        
+        SimpleUserDto user;
+        if (token == null || token.isEmpty()) {
+            throw new InvalidTokenException("Token is missing or empty.");
+        }
+        try {
+            user = validationService.ValidationSession(token);
+        } catch (FeignException.Unauthorized e) {
+            throw new InvalidTokenException("Token is expired or invalid.");
+        } catch (FeignException e) {
+            throw new ConnectionFaildAuthenticationException("Error communicating with validation service.");
+        } catch (Exception e) {
+            throw new ConnectionFaildAuthenticationException("An unexpected error occurred during token validation.");
+        }
+
+        if (user == null || user.getId() == null) {
+            throw new InvalidUserException("Invalid or unauthorized user session.");
+        }
     
         // Verificar y rellenar campos de cliente si están vacíos
         if (createFinalConsumerBillDTO.getCustomerName() == null || createFinalConsumerBillDTO.getCustomerName().trim().isEmpty()) {
@@ -130,7 +146,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             controlNumber,
             date,
             ivaRate,
-            "pepe",
+            user.getFirstName() +" "+ user.getLastName(),
             "Becky's Florist S.A. de C.V.",
             "0614-987654-101-3",
             "Av. Las Flores #123, San Salvador",

@@ -7,6 +7,6 @@ import shareddtos.billmodule.bill.ShowBillDto;
 
 public interface IFinalConsumerBillService {
     
-    ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO bill);
+    ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO bill, String token);
 
 }
