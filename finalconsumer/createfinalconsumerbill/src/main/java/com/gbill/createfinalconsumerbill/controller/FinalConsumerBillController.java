@@ -27,7 +27,7 @@ public class FinalConsumerBillController {
 
     @PostMapping("/create")
     public ResponseEntity<CreateFinalConsumerBillDTO> createFinalConsumerBill(@Valid @RequestBody CreateFinalConsumerBillDTO createFinalConsumerBillDTO, @RequestHeader("Authorization") String token){
-        billService.createFinalConsumerBill(createFinalConsumerBillDTO, token);
+        billService.createFinalConsumerBill(createFinalConsumerBillDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createFinalConsumerBillDTO);
     }
 
