@@ -51,5 +51,6 @@ jobs:
               -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
               -e URL_VALIDATION=${{ secrets.URL_VALIDATION}} \
+              -e URL_PRODUCT=${{ secrets.URL_PRODUCT}} \
               createfinalconsumerbill
           EOF

@@ -17,13 +17,14 @@ import shareddtos.billmodule.BillItem.CreateBillItemDTO;
 import com.gbill.createfinalconsumerbill.modeldto.CreateBillItemRequestDTO;
 import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
 import com.gbill.createfinalconsumerbill.repository.BillRepository;
+import com.gbill.createfinalconsumerbill.clients.GetProductsByIds;
 import com.gbill.createfinalconsumerbill.clients.ValidationService;
 import com.gbill.createfinalconsumerbill.exception.ConnectionFaildAuthenticationException;
 import com.gbill.createfinalconsumerbill.exception.InvalidTokenException;
 import com.gbill.createfinalconsumerbill.exception.InvalidUserException;
 
 import shareddtos.billmodule.bill.ShowBillDto;
-import shareddtos.billmodule.product.ProductBillDTO;
+import shareddtos.inventorymodule.ShowProductDTO;
 import shareddtos.usersmodule.auth.SimpleUserDto;
 import feign.FeignException;
 import com.gbill.createfinalconsumerbill.model.BillItem;
@@ -34,15 +35,15 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
 
     private final BillRepository billRepository;
     private final ValidationService validationService;
-    private final ProductService productService;
+    private final GetProductsByIds getProductsByIds;
 
     public FinalConsumerBillService(BillRepository billRepository
         , ValidationService validationService
-        , ProductService productService)
+        , GetProductsByIds getProductsByIds)
     {
         this.billRepository = billRepository;
         this.validationService = validationService;
-        this.productService = productService;
+        this.getProductsByIds = getProductsByIds;
     }
 
     @Override
@@ -106,16 +107,16 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             .collect(Collectors.toList());
 
         //obtenemso los productos
-        List<ProductBillDTO> products = productService.getAllIds(productIds);
+        List<ShowProductDTO> products = getProductsByIds.getByIds(productIds);
 
         //mapeamos los ids
-        Map<Long, ProductBillDTO> productMap = products.stream().collect(Collectors.toMap(ProductBillDTO::getId, p -> p));
+        Map<Long, ShowProductDTO> productMap = products.stream().collect(Collectors.toMap(ShowProductDTO::getId, p -> p));
 
         //mapeamos los productos para pasarlos a una lista de CreateBillItemDTO
         List<CreateBillItemDTO> productItem = createFinalConsumerBillDTO.getProducts().stream()
             .map(item -> {
 
-                ProductBillDTO product = productMap.get(item.getProductId());
+                ShowProductDTO product = productMap.get(item.getProductId());
                 double subTotal = product.getPrice() * item.getRequestedQuantity();
 
                 CreateBillItemDTO billitem = new CreateBillItemDTO();
