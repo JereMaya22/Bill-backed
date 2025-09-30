@@ -1,0 +1,54 @@
+name: Deploy Spring Boot inventory to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build Spring Boot JAR
+        working-directory: ./inventory
+        run: ./mvnw clean package -DskipTests
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_KEY }}
+
+      - name: Copy files to VPS
+        run: |
+          scp -o StrictHostKeyChecking=no \
+          ./inventory/target/*.jar \
+          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/${{ secrets.VPS_USER }}/bill/inventory/inventory.jar
+
+          scp -o StrictHostKeyChecking=no \
+          ./inventory/Dockerfile \
+          ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/${{ secrets.VPS_USER }}/bill/inventory/Dockerfile
+
+      - name: Deploy Docker on VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd /home/${{ secrets.VPS_USER }}/bill/inventory
+            docker stop inventory || true
+            docker rm inventory || true
+            docker build -t inventory .
+            docker run -d --name inventory \
+              -p 9010:9010 \
+              -e DB_URL=${{ secrets.DB_URL_INVENTORY }} \
+              -e DB_USERNAME=${{ secrets.DB_USERNAME_INVENTORY }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD_INVENTORY }} \
+              inventory
+          EOF
