@@ -55,4 +55,6 @@ public class FinalConsumerBill {
     private Double withheldIva;
     private Double totalWithIva;
 
+    private String pdfPath;
+
 }

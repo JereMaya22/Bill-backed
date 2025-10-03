@@ -20,7 +20,7 @@ public class FinalConsumerBillMapper {
     , String controlNumber, LocalDateTime date, Double iva, String account,
     String companyName, String companyDocument, String companyAddress, String companyEmail, String companyPhone,
     Double nonTaxedSales, Double exemptSales, Double taxedSales, Double perceivedIva,
-    Double totalWithIva, List<CreateBillItemDTO> items) {
+    Double totalWithIva, List<CreateBillItemDTO> items, String pdfPath) {
         return new FinalConsumerBill(
             null,
             generationCode,
@@ -54,7 +54,8 @@ public class FinalConsumerBillMapper {
             iva,
             perceivedIva,
             dto.getWithheldIva(),
-            totalWithIva
+            totalWithIva,
+            pdfPath
         );
     }
 

@@ -1,5 +1,6 @@
 package com.gbill.createfinalconsumerbill.service;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -160,7 +161,8 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             totalWithoutIva, 
             perceivedIva,
             totalWithIva,
-            productItem
+            productItem,
+            null
         );
 
 
@@ -174,7 +176,12 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         billRepository.save(bill);
 
         try {
-            pdfInvoiceService.generateInvoicePdf(bill);
+
+            Path pdfPath = pdfInvoiceService.generateInvoicePdf(bill);
+            if(pdfPath != null) {
+                bill.setPdfPath(pdfPath.toString());
+                billRepository.save(bill);
+            }
         }catch (Exception ignored) {}
 
         return FinalConsumerBillMapper.toShowBillDto(bill);
