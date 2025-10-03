@@ -20,7 +20,7 @@ import com.ginventory.inventory.dto.ShowProductDTO;
 import com.ginventory.inventory.service.IProductService;
 
 @RestController
-@RequestMapping("/cs")
+@RequestMapping("/products")
 public class ProductController {
 
     private final IProductService productService;
