@@ -147,7 +147,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             date,
             ivaRate,
             user.getFirstName() +" "+ user.getLastName(),
-            "Becky's Florist S.A. de C.V.",
+            "Becky's Florist S.A. de C.V.", 
             "0614-987654-101-3",
             "Av. Las Flores #123, San Salvador",
             "facturacion@beckysflorist.com",
