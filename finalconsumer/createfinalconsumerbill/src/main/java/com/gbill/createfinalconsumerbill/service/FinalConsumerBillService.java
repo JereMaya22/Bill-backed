@@ -36,14 +36,17 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
     private final BillRepository billRepository;
     private final ValidationService validationService;
     private final GetProductsByIds getProductsByIds;
+    private final PdfInvoiceService pdfInvoiceService;
 
     public FinalConsumerBillService(BillRepository billRepository
         , ValidationService validationService
-        , GetProductsByIds getProductsByIds)
+        , GetProductsByIds getProductsByIds,
+        PdfInvoiceService pdfInvoiceService)
     {
         this.billRepository = billRepository;
         this.validationService = validationService;
         this.getProductsByIds = getProductsByIds;
+        this.pdfInvoiceService = pdfInvoiceService;
     }
 
     @Override
@@ -169,6 +172,10 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
 
         //guardamos la factura
         billRepository.save(bill);
+
+        try {
+            pdfInvoiceService.generateInvoicePdf(bill);
+        }catch (Exception ignored) {}
 
         return FinalConsumerBillMapper.toShowBillDto(bill);
     }

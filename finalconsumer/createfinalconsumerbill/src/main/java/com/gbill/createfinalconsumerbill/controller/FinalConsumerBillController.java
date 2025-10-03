@@ -13,6 +13,7 @@ import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
 import com.gbill.createfinalconsumerbill.service.FinalConsumerBillService;
 
 import jakarta.validation.Valid;
+import shareddtos.billmodule.bill.ShowBillDto;
 
 @RestController
 @RequestMapping("/api/final-consumer")
@@ -26,9 +27,9 @@ public class FinalConsumerBillController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<CreateFinalConsumerBillDTO> createFinalConsumerBill(@Valid @RequestBody CreateFinalConsumerBillDTO createFinalConsumerBillDTO, @RequestHeader("Authorization") String token){
-        billService.createFinalConsumerBill(createFinalConsumerBillDTO, token);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createFinalConsumerBillDTO);
+    public ResponseEntity<ShowBillDto> createFinalConsumerBill(@Valid @RequestBody CreateFinalConsumerBillDTO createFinalConsumerBillDTO, @RequestHeader("Authorization") String token){
+        ShowBillDto showBillDto = billService.createFinalConsumerBill(createFinalConsumerBillDTO, token);
+        return ResponseEntity.status(HttpStatus.CREATED).body(showBillDto);
     }
 
     

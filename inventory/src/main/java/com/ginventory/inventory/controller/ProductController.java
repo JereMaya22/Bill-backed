@@ -15,11 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ginventory.inventory.dto.CreateProductDTO;
 import com.ginventory.inventory.dto.EditProduct;
+import com.ginventory.inventory.dto.LowStockAlertDTO;
 import com.ginventory.inventory.dto.ShowProductDTO;
 import com.ginventory.inventory.service.IProductService;
 
 @RestController
-@RequestMapping("/products")
+@RequestMapping("/cs")
 public class ProductController {
 
     private final IProductService productService;
@@ -85,5 +86,11 @@ public class ProductController {
     public ResponseEntity<ShowProductDTO> increaseStock(@PathVariable Long id, @RequestParam int quantity) {
         ShowProductDTO updatedProduct = productService.increaseStock(id, quantity);
         return ResponseEntity.ok(updatedProduct);
+    }
+
+    @GetMapping("/low-stock-alerts")
+    public ResponseEntity<List<LowStockAlertDTO>> getLowStockAlerts() {
+        List<LowStockAlertDTO> alerts = productService.getLowStockAlerts();
+        return ResponseEntity.ok(alerts);
     }
 }

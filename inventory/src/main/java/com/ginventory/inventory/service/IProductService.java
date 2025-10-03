@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.ginventory.inventory.dto.CreateProductDTO;
 import com.ginventory.inventory.dto.EditProduct;
+import com.ginventory.inventory.dto.LowStockAlertDTO;
 import com.ginventory.inventory.dto.ShowProductDTO;
 
 public interface IProductService {
@@ -17,5 +18,6 @@ public interface IProductService {
     EditProduct editProduct(EditProduct editProduct);
     ShowProductDTO decreaseStock(Long id, int quantity); // Nuevo método para bajar stock
     ShowProductDTO increaseStock(Long id, int quantity); // Nuevo método para subir stock
+    List<LowStockAlertDTO> getLowStockAlerts(); // Método para obtener alertas de stock bajo
 
 }

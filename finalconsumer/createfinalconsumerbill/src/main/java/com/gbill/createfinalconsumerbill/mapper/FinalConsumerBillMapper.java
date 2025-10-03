@@ -15,6 +15,7 @@ import shareddtos.billmodule.bill.ShowBillDto;
 
 
 public class FinalConsumerBillMapper {
+    
     public static FinalConsumerBill toEntity(CreateFinalConsumerBillDTO dto, String generationCode
     , String controlNumber, LocalDateTime date, Double iva, String account,
     String companyName, String companyDocument, String companyAddress, String companyEmail, String companyPhone,
