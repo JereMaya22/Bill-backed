@@ -21,22 +21,22 @@ public class ReceiverMapper {
     public static CreateReceiver toDTO(Receiver receiver) {
         return new CreateReceiver(
             receiver.getName(),
+            receiver.getLastName(),
             receiver.getDocument(),
             receiver.getAddress(),
             receiver.getEmail(),
-            receiver.getPhone(),
-            receiver.getLastName()
+            receiver.getPhone()
         );
     }
 
     public static ShowReceiver toShowReceiverDto(Receiver receiver) {
         return new ShowReceiver(
             receiver.getName(),
+            receiver.getLastName(),
             receiver.getDocument(),
             receiver.getAddress(),
             receiver.getEmail(),
-            receiver.getPhone(),
-            receiver.getLastName()
+            receiver.getPhone()
         );
     }
 

@@ -77,18 +77,17 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             throw new InvalidUserException("Invalid or unauthorized user session.");
         }
 
-        // validaciones iniciales
         if (createFinalConsumerBillDTO == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
         }
 
-        // Asegurar que exista un receiver (crear uno por defecto si viene null)
+        // Asegurar que exista un receiver (crear uno por defecto si esta vacio)
         CreateReceiver receiverDto = createFinalConsumerBillDTO.getReceiver();
         if (receiverDto == null) {
             // Crear un receiver por defecto
             receiverDto = new CreateReceiver();
             receiverDto.setCustomerName("Consumidor Final");
-            receiverDto.setCustomerLastname(""); // Si no hay apellido, dejar vacío
+            receiverDto.setCustomerLastname("Final");
             receiverDto.setCustomerDocument("99999999-9");
             receiverDto.setCustomerAddress("Dirección Genérica");
             receiverDto.setCustomerEmail("consumidor@example.com");
@@ -111,7 +110,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             receiverDto.setCustomerName("Consumidor Final");
         }
         if (receiverDto.getCustomerLastname() == null) {
-            receiverDto.setCustomerLastname("");
+            receiverDto.setCustomerLastname("Final");
         }
         if (receiverDto.getCustomerDocument() == null || receiverDto.getCustomerDocument().trim().isEmpty()) {
             receiverDto.setCustomerDocument("99999999-9");
