@@ -5,10 +5,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -18,51 +15,57 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.gbill.createfinalconsumerbill.mapper.FinalConsumerBillMapper;
 import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
-import shareddtos.billmodule.BillItem.CreateBillItemDTO;
-import com.gbill.createfinalconsumerbill.modeldto.CreateBillItemRequestDTO;
-import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
-import com.gbill.createfinalconsumerbill.modeldto.CreateReceiver;
-import com.gbill.createfinalconsumerbill.modeldto.CreateTransmitter;
+import com.gbill.createfinalconsumerbill.model.BillItem;
+import com.gbill.createfinalconsumerbill.model.Payment;
 import com.gbill.createfinalconsumerbill.repository.BillRepository;
+
 import com.gbill.createfinalconsumerbill.clients.GetProductsByIds;
 import com.gbill.createfinalconsumerbill.clients.ValidationService;
+import com.gbill.createfinalconsumerbill.clients.PromotionClient;
+
+import com.gbill.createfinalconsumerbill.modeldto.*;
+import com.gbill.createfinalconsumerbill.modeldto.payment.PaymentDTO;
+import com.gbill.createfinalconsumerbill.modeldto.promortion.*;
+
 import com.gbill.createfinalconsumerbill.exception.ConnectionFaildAuthenticationException;
 import com.gbill.createfinalconsumerbill.exception.InvalidTokenException;
 import com.gbill.createfinalconsumerbill.exception.InvalidUserException;
-import shareddtos.usersmodule.auth.SimpleUserDto;
 
-import shareddtos.billmodule.bill.ShowBillDto;
-import com.gbill.createfinalconsumerbill.modeldto.NewProductDTO;
 import feign.FeignException;
-import com.gbill.createfinalconsumerbill.model.BillItem;
+import shareddtos.usersmodule.auth.SimpleUserDto;
+import shareddtos.billmodule.BillItem.CreateBillItemDTO;
+import shareddtos.billmodule.bill.ShowBillDto;
 
 @Service
-public class FinalConsumerBillService implements IFinalConsumerBillService{
-
+public class FinalConsumerBillService implements IFinalConsumerBillService {
 
     private final BillRepository billRepository;
     private final ValidationService validationService;
     private final GetProductsByIds getProductsByIds;
     private final PdfInvoiceService pdfInvoiceService;
+    private final PromotionClient promotionClient;
 
-    public FinalConsumerBillService(BillRepository billRepository
-        , ValidationService validationService
-        , GetProductsByIds getProductsByIds,
-        PdfInvoiceService pdfInvoiceService)
-    {
+    public FinalConsumerBillService(
+        BillRepository billRepository,
+        ValidationService validationService,
+        GetProductsByIds getProductsByIds,
+        PdfInvoiceService pdfInvoiceService,
+        PromotionClient promotionClient
+    ) {
         this.billRepository = billRepository;
         this.validationService = validationService;
         this.getProductsByIds = getProductsByIds;
         this.pdfInvoiceService = pdfInvoiceService;
+        this.promotionClient = promotionClient;
     }
 
     @Override
     public ShowBillDto createFinalConsumerBill(CreateFinalConsumerBillDTO createFinalConsumerBillDTO, String token) {
 
+        // === Validación del token ===
         SimpleUserDto user;
-        if (token == null || token.isEmpty()) {
+        if (token == null || token.isEmpty())
             throw new InvalidTokenException("Token is missing or empty.");
-        }
         try {
             user = validationService.ValidationSession(token);
         } catch (FeignException.Unauthorized e) {
@@ -73,18 +76,15 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             throw new ConnectionFaildAuthenticationException("An unexpected error occurred during token validation.");
         }
 
-        if (user == null || user.getId() == null) {
+        if (user == null || user.getId() == null)
             throw new InvalidUserException("Invalid or unauthorized user session.");
-        }
 
-        if (createFinalConsumerBillDTO == null) {
+        if (createFinalConsumerBillDTO == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
-        }
 
-        // Asegurar que exista un receiver (crear uno por defecto si esta vacio)
+        // === Default receiver and transmitter ===
         CreateReceiver receiverDto = createFinalConsumerBillDTO.getReceiver();
         if (receiverDto == null) {
-            // Crear un receiver por defecto
             receiverDto = new CreateReceiver();
             receiverDto.setCustomerName("Consumidor Final");
             receiverDto.setCustomerLastname("Final");
@@ -104,175 +104,196 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             defaultTransmitter.setCompanyPhone("2212-3456");
             createFinalConsumerBillDTO.setTransmitter(defaultTransmitter);
         }
-    
-        // Verificar y rellenar campos de cliente si están vacíos
-        if (receiverDto.getCustomerName() == null || receiverDto.getCustomerName().trim().isEmpty()) {
-            receiverDto.setCustomerName("Consumidor Final");
-        }
-        if (receiverDto.getCustomerLastname() == null) {
-            receiverDto.setCustomerLastname("Final");
-        }
-        if (receiverDto.getCustomerDocument() == null || receiverDto.getCustomerDocument().trim().isEmpty()) {
-            receiverDto.setCustomerDocument("99999999-9");
-        } else {
-            receiverDto.setCustomerDocument(receiverDto.getCustomerDocument().trim());
-        }
-        if (receiverDto.getCustomerAddress() == null || receiverDto.getCustomerAddress().trim().isEmpty()) {
-            receiverDto.setCustomerAddress("Dirección Genérica");
-        }
-        if (receiverDto.getCustomerEmail() == null || receiverDto.getCustomerEmail().trim().isEmpty()) {
-            receiverDto.setCustomerEmail("consumidor@example.com");
-        }
-        if (receiverDto.getCustomerPhone() == null || receiverDto.getCustomerPhone().trim().isEmpty()) {
-            receiverDto.setCustomerPhone("9999-9999");
-        } else {
-            receiverDto.setCustomerPhone(receiverDto.getCustomerPhone().trim());
-        }
 
-        //genera el codigo
+        // === Generate metadata ===
         String generationCode = UUID.randomUUID().toString();
-
-        //genera el numero de control
-        String controlNumber = "DTE-03" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) 
-                + "-" + ThreadLocalRandom.current().nextLong(1_000_000_000_000_000L, 
-                    10_000_000_000_000_000L);
-
-        //Genera la fecha de creacion de la factura                                                
+        String controlNumber = "DTE-03" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                + "-" + ThreadLocalRandom.current().nextLong(1_000_000_000_000_000L, 10_000_000_000_000_000L);
         LocalDateTime date = LocalDateTime.now().withNano(0);
 
-        //variables 
         Double ivaRate = 0.13;
-        Double perceivedIva;
-        Double totalWithIva;
 
-
-        //obtenemos la lista de ids de productos
+        // === Get product info ===
         List<Long> productIds = createFinalConsumerBillDTO.getProducts().stream()
-            .map(CreateBillItemRequestDTO::getProductId)
-            .collect(Collectors.toList());
+                .map(CreateBillItemRequestDTO::getProductId)
+                .collect(Collectors.toList());
 
-        //obtenemos los productos uno por uno del nuevo servicio
-        List<NewProductDTO> products = productIds.stream()
-            .map(id -> {
-                try {
-                    return getProductsByIds.getById(id);
-                } catch (Exception e) {
-                    // Manejar error si el producto no existe
-                    throw new RuntimeException("Error obteniendo producto con ID: " + id, e);
-                }
-            })
-            .collect(Collectors.toList());
+        Map<Long, NewProductDTO> productMap = productIds.stream()
+                .map(id -> {
+                    try {
+                        return getProductsByIds.getById(id);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error obteniendo producto con ID: " + id, e);
+                    }
+                })
+                .collect(Collectors.toMap(NewProductDTO::getProductoId, p -> p));
 
-        //mapeamos los ids
-        Map<Long, NewProductDTO> productMap = products.stream().collect(Collectors.toMap(NewProductDTO::getProductoId, p -> p));
-
-
-        //mapeamos los productos para pasarlos a una lista de CreateBillItemDTO
         List<CreateBillItemDTO> productItem = createFinalConsumerBillDTO.getProducts().stream()
-            .map(item -> {
+                .map(item -> {
+                    NewProductDTO product = productMap.get(item.getProductId());
+                    double subTotal = new BillItem().sumSubtotal(product.getPrecio(), item.getRequestedQuantity());
 
-                NewProductDTO product = productMap.get(item.getProductId());
-                double subTotal = new BillItem().sumSubtotal(product.getPrecio(),item.getRequestedQuantity() );
-                
-                CreateBillItemDTO billitem = new CreateBillItemDTO();
-                billitem.setProductId(product.getProductoId());
-                billitem.setName(product.getNombre());
-                billitem.setRequestedQuantity(item.getRequestedQuantity());
-                billitem.setPrice(product.getPrecio());
-                billitem.setSubTotal(subTotal); 
+                    CreateBillItemDTO dto = new CreateBillItemDTO();
+                    dto.setProductId(product.getProductoId());
+                    dto.setName(product.getNombre());
+                    dto.setRequestedQuantity(item.getRequestedQuantity());
+                    dto.setPrice(product.getPrecio());
+                    dto.setSubTotal(subTotal);
+                    return dto;
+                }).collect(Collectors.toList());
 
-                return billitem;
-            }).collect(Collectors.toList());
-        
-            
+        // === Promotions ===
+        Boolean promotionApplied = false;
+        String promotionCode = null;
+        String promotionName = null;
+        Double totalPromotionDiscount = 0.0;
+        List<Long> productsWithPromotion = new ArrayList<>();
 
-        // calculo de totales
-        Double totalWithoutIva = 0.0;
         for (CreateBillItemDTO item : productItem) {
-            totalWithoutIva += item.getSubTotal();
-        }
-        perceivedIva = totalWithoutIva * ivaRate;
-        totalWithIva = totalWithoutIva + perceivedIva;
+            try {
+                PromotionAvailableRequest promoRequest = new PromotionAvailableRequest();
+                promoRequest.setAccount(user.getUsername() + " " + user.getLastName());
+                promoRequest.setProductos(List.of(new ProductPromotionDTO(
+                        item.getProductId(),
+                        item.getRequestedQuantity(),
+                        item.getPrice(),
+                        item.getName()
+                )));
 
-        var transmitterDto = createFinalConsumerBillDTO.getTransmitter();
-        if (transmitterDto.getCompanyName() == null || transmitterDto.getCompanyName().trim().isEmpty()) {
-            transmitterDto.setCompanyName("Becky's Florist S.A. de C.V.");
-        }
-        if (transmitterDto.getCompanyDocument() == null || transmitterDto.getCompanyDocument().trim().isEmpty()) {
-            transmitterDto.setCompanyDocument("12345678-9");
-        }
-        if (transmitterDto.getCompanyAddress() == null || transmitterDto.getCompanyAddress().trim().isEmpty()) {
-            transmitterDto.setCompanyAddress("Av. Las Flores #123, San Salvador");
-        }
-        if (transmitterDto.getCompanyEmail() == null || transmitterDto.getCompanyEmail().trim().isEmpty()) {
-            transmitterDto.setCompanyEmail("facturacion@beckysflorist.com");
-        }
-        if (transmitterDto.getCompanyPhone() == null || transmitterDto.getCompanyPhone().trim().isEmpty()) {
-            transmitterDto.setCompanyPhone("2212-3456");
-        }
+                PromotionAvailableResponse availablePromos = promotionClient.getAvailablePromotions(promoRequest);
 
-        //conversion de dto a entidad
-        FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(
-            createFinalConsumerBillDTO,
-            generationCode,
-            controlNumber,
-            date,
-            ivaRate,
-            user.getFirstName() +" "+ user.getLastName(),
-            0.0,
-            0.0,
-            totalWithoutIva, 
-            perceivedIva,
-            totalWithIva,
-            productItem,
-            null
-        );
+                if (availablePromos != null && availablePromos.getPromocionesDisponibles() != null
+                        && !availablePromos.getPromocionesDisponibles().isEmpty()) {
 
+                    PromotionDetailDTO bestPromo = availablePromos.getPromocionesDisponibles().stream()
+                            .max(Comparator.comparingDouble(p -> p.getDescuentoEstimado() != null ? p.getDescuentoEstimado() : 0.0))
+                            .orElse(null);
 
-        // A cada billitem asignamos su relacion con finalconsumer
-        for (BillItem item : bill.getProducts()) {
-            item.setSubTotal(item.getPrice() * item.getRequestedQuantity());
-            item.setFinalConsumerBill(bill);
-        }
+                    if (bestPromo != null) {
+                        ApplyPromotionRequest applyRequest = new ApplyPromotionRequest();
+                        applyRequest.setAccount(user.getUsername() + " " + user.getLastName());
+                        applyRequest.setProductos(promoRequest.getProductos());
+                        applyRequest.setCodigoPromocion(bestPromo.getCodigo());
 
-        //guardamos la factura
-        billRepository.save(bill);
+                        ApplyPromotionResponse applied = promotionClient.applyPromotion(applyRequest);
 
-        //disminucion de inventario
-        for(BillItem item : bill.getProducts()){
-            try{
-                NewProductDTO updatedProduct = getProductsByIds.decreaseStock(item.getProductId(), item.getRequestedQuantity());
-                System.out.println("Stock disminuido exitosamente para producto " + item.getProductId() + 
-                                  ". Stock actual: " + updatedProduct.getStockMaximo());
-            }catch(Exception e){
-                System.err.println("Error disminuyendo stock para producto " + item.getProductId() + ": " + e.getMessage());
+                        if (applied.getPromocionAplicada() != null && applied.getPromocionAplicada()) {
+                            promotionApplied = true;
+                            promotionCode = bestPromo.getCodigo();
+                            promotionName = bestPromo.getNombre();
+                            totalPromotionDiscount += applied.getMontoDescuento();
+                            productsWithPromotion.add(item.getProductId());
+
+                            applied.getProductosConDescuento().forEach(discounted -> {
+                                if (discounted.getId().equals(item.getProductId())) {
+                                    item.setPrice(discounted.getPrecioConDescuento() / discounted.getQuantity());
+                                    item.setSubTotal(discounted.getPrecioConDescuento());
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("No se pudo aplicar promoción a " + item.getName() + ": " + e.getMessage());
             }
         }
 
-        try {
+        // === Totals ===
+        Double totalWithoutIva = productItem.stream()
+                .mapToDouble(CreateBillItemDTO::getSubTotal)
+                .sum();
 
+        Double perceivedIva = totalWithoutIva * ivaRate;
+        Double totalWithIva = totalWithoutIva + perceivedIva;
+
+        // === Build entity ===
+        FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(
+                createFinalConsumerBillDTO,
+                generationCode,
+                controlNumber,
+                date,
+                ivaRate,
+                user.getFirstName() + " " + user.getLastName(),
+                0.0,
+                0.0,
+                totalWithoutIva,
+                perceivedIva,
+                totalWithIva,
+                productItem,
+                null,
+                promotionApplied,
+                promotionCode,
+                promotionName,
+                totalPromotionDiscount,
+                productsWithPromotion
+        );
+
+        bill.getProducts().forEach(i -> {
+            i.setSubTotal(i.getPrice() * i.getRequestedQuantity());
+            i.setFinalConsumerBill(bill);
+        });
+
+        // === Integración del pago ===
+        PaymentDTO paymentDto = createFinalConsumerBillDTO.getPayment();
+
+        if (paymentDto != null && "TARJETA".equalsIgnoreCase(paymentDto.getPaymentType())) {
+            if (paymentDto.getAuthorizationCode() == null || paymentDto.getAuthorizationCode().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La tarjeta no fue validada");
+            }
+
+            Payment payment = new Payment();
+            payment.setPaymentType("TARJETA");
+            payment.setCardType(paymentDto.getCardType());
+            payment.setMaskedCardNumber(paymentDto.getMaskedCardNumber());
+            payment.setCardHolder(paymentDto.getCardHolder());
+            payment.setAuthorizationCode(paymentDto.getAuthorizationCode());
+            payment.setBill(bill);
+            bill.setPayment(payment);
+        }
+
+        if (paymentDto != null && "EFECTIVO".equalsIgnoreCase(paymentDto.getPaymentType())) {
+            Payment payment = new Payment();
+            payment.setPaymentType("EFECTIVO");
+            payment.setBill(bill);
+            bill.setPayment(payment);
+        }
+
+        // === Save bill ===
+        billRepository.save(bill);
+
+        // === Decrease stock ===
+        for (BillItem item : bill.getProducts()) {
+            try {
+                NewProductDTO updatedProduct = getProductsByIds.decreaseStock(item.getProductId(), item.getRequestedQuantity());
+                System.out.println("Stock disminuido para producto " + item.getProductId() + ": " + updatedProduct.getStockMaximo());
+            } catch (Exception e) {
+                System.err.println("Error disminuyendo stock: " + e.getMessage());
+            }
+        }
+
+        // === Generate PDF ===
+        try {
             Path pdfPath = pdfInvoiceService.generateInvoicePdf(bill);
-            if(pdfPath != null) {
+            if (pdfPath != null) {
                 bill.setPdfPath(pdfPath.toString());
                 billRepository.save(bill);
             }
-        }catch (Exception ignored) {}
+        } catch (Exception ignored) {}
 
         return FinalConsumerBillMapper.toShowBillDto(bill);
     }
 
     public Optional<byte[]> getPdfByGenerationCode(String generationCode) {
         return billRepository.findBygenerationCode(generationCode)
-            .flatMap(bill -> {
-                try {
-                    if (bill.getPdfPath() == null) return Optional.empty();
-                    Path path = Path.of(bill.getPdfPath());
-                    if (!Files.exists(path)) return Optional.empty();
-                    return Optional.of(Files.readAllBytes(path));
-                } catch (Exception e) {
-                    return Optional.empty();
-                }
-            });
+                .flatMap(bill -> {
+                    try {
+                        if (bill.getPdfPath() == null) return Optional.empty();
+                        Path path = Path.of(bill.getPdfPath());
+                        if (!Files.exists(path)) return Optional.empty();
+                        return Optional.of(Files.readAllBytes(path));
+                    } catch (Exception e) {
+                        return Optional.empty();
+                    }
+                });
     }
-
 }

@@ -2,6 +2,8 @@ package com.gbill.createfinalconsumerbill.modeldto;
 
 import java.util.List;
 
+import com.gbill.createfinalconsumerbill.modeldto.payment.PaymentDTO;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -27,4 +29,22 @@ public class CreateFinalConsumerBillDTO {
 
     // Totals
     private Double withheldIva;
+
+    //payment
+    private PaymentDTO payment;
+
+    public CreateFinalConsumerBillDTO(
+    String paymentCondition,
+    CreateTransmitter transmitter,
+    CreateReceiver receiver,
+    List<CreateBillItemRequestDTO> products,
+    Double withheldIva
+) {
+    this.paymentCondition = paymentCondition;
+    this.transmitter = transmitter;
+    this.receiver = receiver;
+    this.products = products;
+    this.withheldIva = withheldIva;
+}
+
 }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -13,12 +14,16 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = "payment")
+@EqualsAndHashCode(exclude = "payment")
 public class FinalConsumerBill {
     
     @Id
@@ -54,5 +59,67 @@ public class FinalConsumerBill {
     private Double totalWithIva;
 
     private String pdfPath;
+
+    //promorions
+    private Boolean promotionApplied;
+    private String promotionCode;
+    private String promotionName;
+    private Double promotionDiscount;
+
+    @ElementCollection
+    private List<Long> productsWithPromotion;
+
+    @OneToOne(mappedBy = "bill", cascade = CascadeType.ALL)
+    private Payment payment;
+
+    public FinalConsumerBill(
+    Long id,
+    String generationCode,
+    String controlNumber,
+    LocalDateTime billGenerationDate,
+    String account,
+    String paymentCondition,
+    Transmitter transmitter,
+    Receiver receiver,
+    List<BillItem> products,
+    Double nonTaxedSales,
+    Double exemptSales,
+    Double taxedSales,
+    Double iva,
+    Double perceivedIva,
+    Double withheldIva,
+    Double totalWithIva,
+    String pdfPath,
+    Boolean promotionApplied,
+    String promotionCode,
+    String promotionName,
+    Double promotionDiscount,
+    List<Long> productsWithPromotion
+) {
+    this.id = id;
+    this.generationCode = generationCode;
+    this.controlNumber = controlNumber;
+    this.billGenerationDate = billGenerationDate;
+    this.account = account;
+    this.paymentCondition = paymentCondition;
+    this.transmitter = transmitter;
+    this.receiver = receiver;
+    this.products = products;
+    this.nonTaxedSales = nonTaxedSales;
+    this.exemptSales = exemptSales;
+    this.taxedSales = taxedSales;
+    this.iva = iva;
+    this.perceivedIva = perceivedIva;
+    this.withheldIva = withheldIva;
+    this.totalWithIva = totalWithIva;
+    this.pdfPath = pdfPath;
+    this.promotionApplied = promotionApplied;
+    this.promotionCode = promotionCode;
+    this.promotionName = promotionName;
+    this.promotionDiscount = promotionDiscount;
+    this.productsWithPromotion = productsWithPromotion;
+}
+
+
 
 }

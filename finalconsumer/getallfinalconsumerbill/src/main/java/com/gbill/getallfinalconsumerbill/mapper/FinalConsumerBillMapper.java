@@ -15,23 +15,46 @@ import shareddtos.billmodule.bill.ShowTransmitter;
 public class FinalConsumerBillMapper {
 
     public static ShowBillDto toDto(FinalConsumerBill finalConsumerBill) {
-        return new ShowBillDto(
-            finalConsumerBill.getGenerationCode(),
-            finalConsumerBill.getControlNumber(),
-            finalConsumerBill.getBillGenerationDate(),
-            finalConsumerBill.getAccount(),
-            finalConsumerBill.getPaymentCondition(),
-            toTransmitterDto(finalConsumerBill.getTransmitter()),
-            toReceiverDto(finalConsumerBill.getReceiver()),
-            finalConsumerBill.getProducts().stream().map(FinalConsumerBillMapper::toBillItemDto).collect(Collectors.toList()),
-            finalConsumerBill.getNonTaxedSales(),
-            finalConsumerBill.getExemptSales(),
-            finalConsumerBill.getTaxedSales(),
-            finalConsumerBill.getIva(),
-            finalConsumerBill.getPerceivedIva(),
-            finalConsumerBill.getWithheldIva(),
-            finalConsumerBill.getTotalWithIva()
-        );
+        ShowBillDto dto = new ShowBillDto();
+        dto.setGenerationCode(finalConsumerBill.getGenerationCode());
+        dto.setControlNumber(finalConsumerBill.getControlNumber());
+        dto.setBillGenerationDate(finalConsumerBill.getBillGenerationDate());
+        dto.setAccount(finalConsumerBill.getAccount());
+        dto.setPaymentCondition(finalConsumerBill.getPaymentCondition());
+        dto.setTransmitter(toTransmitterDto(finalConsumerBill.getTransmitter()));
+        dto.setReceiver(toReceiverDto(finalConsumerBill.getReceiver()));
+        dto.setProducts(finalConsumerBill.getProducts()
+                .stream()
+                .map(FinalConsumerBillMapper::toBillItemDto)
+                .collect(Collectors.toList()));
+
+        dto.setNonTaxedSales(finalConsumerBill.getNonTaxedSales());
+        dto.setExemptSales(finalConsumerBill.getExemptSales());
+        dto.setTaxedSales(finalConsumerBill.getTaxedSales());
+        dto.setIva(finalConsumerBill.getIva());
+        dto.setPerceivedIva(finalConsumerBill.getPerceivedIva());
+        dto.setWithheldIva(finalConsumerBill.getWithheldIva());
+        dto.setTotalWithIva(finalConsumerBill.getTotalWithIva());
+
+        // 🔸 Nuevos campos añadidos en tu ShowBillDto
+        dto.setPromotionApplied(finalConsumerBill.getPromotionApplied());
+        dto.setPromotionCode(finalConsumerBill.getPromotionCode());
+        dto.setPromotionName(finalConsumerBill.getPromotionName());
+        dto.setPromotionDiscount(finalConsumerBill.getPromotionDiscount());
+        dto.setProductsWithPromotion(finalConsumerBill.getProductsWithPromotion());
+
+        // 🔸 Y el pago si existe
+        if (finalConsumerBill.getPayment() != null) {
+            shareddtos.billmodule.bill.PaymentDTO paymentDto = new shareddtos.billmodule.bill.PaymentDTO();
+            paymentDto.setPaymentType(finalConsumerBill.getPayment().getPaymentType());
+            paymentDto.setCardType(finalConsumerBill.getPayment().getCardType());
+            paymentDto.setMaskedCardNumber(finalConsumerBill.getPayment().getMaskedCardNumber());
+            paymentDto.setCardHolder(finalConsumerBill.getPayment().getCardHolder());
+            paymentDto.setAuthorizationCode(finalConsumerBill.getPayment().getAuthorizationCode());
+            dto.setPayment(paymentDto);
+        }
+
+        return dto;
     }
 
     private static ShowTransmitter toTransmitterDto(Transmitter transmitter) {
