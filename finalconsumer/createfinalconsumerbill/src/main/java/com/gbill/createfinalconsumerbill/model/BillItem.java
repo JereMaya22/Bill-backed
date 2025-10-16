@@ -29,6 +29,9 @@ public class BillItem {
     @JoinColumn(name = "bill_id")
     private FinalConsumerBill finalConsumerBill;
 
+    public Double sumSubtotal(Double price, int requestedQuantity){
+        return price * requestedQuantity;
+    }
 
 }
 

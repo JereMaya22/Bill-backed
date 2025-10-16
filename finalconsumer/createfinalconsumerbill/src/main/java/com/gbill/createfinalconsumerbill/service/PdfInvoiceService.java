@@ -71,10 +71,10 @@ public class PdfInvoiceService {
 				document.add(emisorH);
 				PdfPTable emisor = new PdfPTable(1);
 				emisor.setWidthPercentage(100);
-				addCell(emisor, bill.getCompanyName(), normalFont);
-				addCell(emisor, "NRC/NIT: " + nullSafe(bill.getCompanyDocument()), normalFont);
-				addCell(emisor, "Dirección: " + nullSafe(bill.getCompanyAddress()), normalFont);
-				addCell(emisor, "Email: " + nullSafe(bill.getCompanyEmail()) + "  Tel: " + nullSafe(bill.getCompanyPhone()), normalFont);
+				addCell(emisor, bill.getTransmitter().getName(), normalFont);
+				addCell(emisor, "NRC/NIT: " + nullSafe(bill.getTransmitter().getDocument()), normalFont);
+				addCell(emisor, "Dirección: " + nullSafe(bill.getTransmitter().getAddress()), normalFont);
+				addCell(emisor, "Email: " + nullSafe(bill.getTransmitter().getEmail()) + "  Tel: " + nullSafe(bill.getTransmitter().getPhone()), normalFont);
 				document.add(emisor);
 
 				document.add(new Paragraph(" "));
@@ -84,10 +84,10 @@ public class PdfInvoiceService {
 				document.add(receptorH);
 				PdfPTable receptor = new PdfPTable(1);
 				receptor.setWidthPercentage(100);
-				addCell(receptor, bill.getCustomerName(), normalFont);
-				addCell(receptor, "Documento: " + nullSafe(bill.getCustomerDocument()), normalFont);
-				addCell(receptor, "Dirección: " + nullSafe(bill.getCustomerAddress()), normalFont);
-				addCell(receptor, "Email: " + nullSafe(bill.getCustomerEmail()) + "  Tel: " + nullSafe(bill.getCustomerPhone()), normalFont);
+				addCell(receptor, bill.getReceiver().getName(), normalFont);
+				addCell(receptor, "Documento: " + nullSafe(bill.getReceiver().getDocument()), normalFont);
+				addCell(receptor, "Dirección: " + nullSafe(bill.getReceiver().getAddress()), normalFont);
+				addCell(receptor, "Email: " + nullSafe(bill.getTransmitter().getEmail()) + "  Tel: " + nullSafe(bill.getReceiver().getPhone()), normalFont);
 				document.add(receptor);
 
 				document.add(new Paragraph(" "));

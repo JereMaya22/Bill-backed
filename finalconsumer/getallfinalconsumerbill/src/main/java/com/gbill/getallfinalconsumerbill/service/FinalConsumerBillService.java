@@ -52,14 +52,14 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
     @Override
     public List<ShowBillDto> getAllBill(String token) {
 
-        
-        if(billRepository.findAll().isEmpty() || billRepository.findAll() == null){
+        validationUser(token);
+
+        var bills = billRepository.findAll();
+        if (bills.isEmpty()) {
             throw new NotFoundException("List empty");
         }
 
-        validationUser(token);
-
-        return billRepository.findAll().stream()
+        return bills.stream()
             .map(FinalConsumerBillMapper::toDto)
             .collect(Collectors.toList());
     }

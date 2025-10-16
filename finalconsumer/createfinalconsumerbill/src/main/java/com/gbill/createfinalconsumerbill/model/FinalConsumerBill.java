@@ -8,7 +8,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,18 +31,14 @@ public class FinalConsumerBill {
     private String paymentCondition;
 
     //transmitter
-    private String companyName;
-    private String companyDocument; 
-    private String companyAddress;
-    private String companyEmail;
-    private String companyPhone;    
+    @OneToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "transmitter_id")
+    private Transmitter transmitter;    
 
     //receiver
-    private String customerName;
-    private String customerDocument; 
-    private String customerAddress;
-    private String customerEmail;
-    private String customerPhone;  
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "receiver_id")
+    private Receiver receiver;  
 
     //products
     @OneToMany(mappedBy = "finalConsumerBill", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -50,7 +48,7 @@ public class FinalConsumerBill {
     private Double nonTaxedSales;
     private Double exemptSales;
     private Double taxedSales;
-    private Double iva; // 13% de IVA
+    private Double iva;
     private Double perceivedIva;
     private Double withheldIva;
     private Double totalWithIva;

@@ -1,32 +1,38 @@
 package com.gbill.createfinalconsumerbill.service;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.gbill.createfinalconsumerbill.mapper.FinalConsumerBillMapper;
 import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
 import shareddtos.billmodule.BillItem.CreateBillItemDTO;
 import com.gbill.createfinalconsumerbill.modeldto.CreateBillItemRequestDTO;
 import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
+import com.gbill.createfinalconsumerbill.modeldto.CreateReceiver;
+import com.gbill.createfinalconsumerbill.modeldto.CreateTransmitter;
 import com.gbill.createfinalconsumerbill.repository.BillRepository;
 import com.gbill.createfinalconsumerbill.clients.GetProductsByIds;
 import com.gbill.createfinalconsumerbill.clients.ValidationService;
 import com.gbill.createfinalconsumerbill.exception.ConnectionFaildAuthenticationException;
 import com.gbill.createfinalconsumerbill.exception.InvalidTokenException;
 import com.gbill.createfinalconsumerbill.exception.InvalidUserException;
+import shareddtos.usersmodule.auth.SimpleUserDto;
 
 import shareddtos.billmodule.bill.ShowBillDto;
-import shareddtos.inventorymodule.ShowProductDTO;
-import shareddtos.usersmodule.auth.SimpleUserDto;
+import com.gbill.createfinalconsumerbill.modeldto.NewProductDTO;
 import feign.FeignException;
 import com.gbill.createfinalconsumerbill.model.BillItem;
 
@@ -70,22 +76,58 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         if (user == null || user.getId() == null) {
             throw new InvalidUserException("Invalid or unauthorized user session.");
         }
+
+        // validaciones iniciales
+        if (createFinalConsumerBillDTO == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+        }
+
+        // Asegurar que exista un receiver (crear uno por defecto si viene null)
+        CreateReceiver receiverDto = createFinalConsumerBillDTO.getReceiver();
+        if (receiverDto == null) {
+            // Crear un receiver por defecto
+            receiverDto = new CreateReceiver();
+            receiverDto.setCustomerName("Consumidor Final");
+            receiverDto.setCustomerLastname(""); // Si no hay apellido, dejar vacío
+            receiverDto.setCustomerDocument("99999999-9");
+            receiverDto.setCustomerAddress("Dirección Genérica");
+            receiverDto.setCustomerEmail("consumidor@example.com");
+            receiverDto.setCustomerPhone("9999-9999");
+            createFinalConsumerBillDTO.setReceiver(receiverDto);
+        }
+
+        if (createFinalConsumerBillDTO.getTransmitter() == null) {
+            CreateTransmitter defaultTransmitter = new CreateTransmitter();
+            defaultTransmitter.setCompanyName("Becky's Florist S.A. de C.V.");
+            defaultTransmitter.setCompanyDocument("12345678-9");
+            defaultTransmitter.setCompanyAddress("Av. Las Flores #123, San Salvador");
+            defaultTransmitter.setCompanyEmail("facturacion@beckysflorist.com");
+            defaultTransmitter.setCompanyPhone("2212-3456");
+            createFinalConsumerBillDTO.setTransmitter(defaultTransmitter);
+        }
     
         // Verificar y rellenar campos de cliente si están vacíos
-        if (createFinalConsumerBillDTO.getCustomerName() == null || createFinalConsumerBillDTO.getCustomerName().trim().isEmpty()) {
-            createFinalConsumerBillDTO.setCustomerName("Consumidor Final");
+        if (receiverDto.getCustomerName() == null || receiverDto.getCustomerName().trim().isEmpty()) {
+            receiverDto.setCustomerName("Consumidor Final");
         }
-        if (createFinalConsumerBillDTO.getCustomerDocument() == null || createFinalConsumerBillDTO.getCustomerDocument().trim().isEmpty()) {
-            createFinalConsumerBillDTO.setCustomerDocument("99999999-9");
+        if (receiverDto.getCustomerLastname() == null) {
+            receiverDto.setCustomerLastname("");
         }
-        if (createFinalConsumerBillDTO.getCustomerAddress() == null || createFinalConsumerBillDTO.getCustomerAddress().trim().isEmpty()) {
-            createFinalConsumerBillDTO.setCustomerAddress("Dirección Genérica");
+        if (receiverDto.getCustomerDocument() == null || receiverDto.getCustomerDocument().trim().isEmpty()) {
+            receiverDto.setCustomerDocument("99999999-9");
+        } else {
+            receiverDto.setCustomerDocument(receiverDto.getCustomerDocument().trim());
         }
-        if (createFinalConsumerBillDTO.getCustomerEmail() == null || createFinalConsumerBillDTO.getCustomerEmail().trim().isEmpty()) {
-            createFinalConsumerBillDTO.setCustomerEmail("consumidor@example.com");
+        if (receiverDto.getCustomerAddress() == null || receiverDto.getCustomerAddress().trim().isEmpty()) {
+            receiverDto.setCustomerAddress("Dirección Genérica");
         }
-        if (createFinalConsumerBillDTO.getCustomerPhone() == null || createFinalConsumerBillDTO.getCustomerPhone().trim().isEmpty()) {
-            createFinalConsumerBillDTO.setCustomerPhone("0000-0000"); 
+        if (receiverDto.getCustomerEmail() == null || receiverDto.getCustomerEmail().trim().isEmpty()) {
+            receiverDto.setCustomerEmail("consumidor@example.com");
+        }
+        if (receiverDto.getCustomerPhone() == null || receiverDto.getCustomerPhone().trim().isEmpty()) {
+            receiverDto.setCustomerPhone("9999-9999");
+        } else {
+            receiverDto.setCustomerPhone(receiverDto.getCustomerPhone().trim());
         }
 
         //genera el codigo
@@ -110,24 +152,34 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             .map(CreateBillItemRequestDTO::getProductId)
             .collect(Collectors.toList());
 
-        //obtenemso los productos
-        List<ShowProductDTO> products = getProductsByIds.getByIds(productIds);
+        //obtenemos los productos uno por uno del nuevo servicio
+        List<NewProductDTO> products = productIds.stream()
+            .map(id -> {
+                try {
+                    return getProductsByIds.getById(id);
+                } catch (Exception e) {
+                    // Manejar error si el producto no existe
+                    throw new RuntimeException("Error obteniendo producto con ID: " + id, e);
+                }
+            })
+            .collect(Collectors.toList());
 
         //mapeamos los ids
-        Map<Long, ShowProductDTO> productMap = products.stream().collect(Collectors.toMap(ShowProductDTO::getId, p -> p));
+        Map<Long, NewProductDTO> productMap = products.stream().collect(Collectors.toMap(NewProductDTO::getProductoId, p -> p));
+
 
         //mapeamos los productos para pasarlos a una lista de CreateBillItemDTO
         List<CreateBillItemDTO> productItem = createFinalConsumerBillDTO.getProducts().stream()
             .map(item -> {
 
-                ShowProductDTO product = productMap.get(item.getProductId());
-                double subTotal = product.getPrice() * item.getRequestedQuantity();
-
+                NewProductDTO product = productMap.get(item.getProductId());
+                double subTotal = new BillItem().sumSubtotal(product.getPrecio(),item.getRequestedQuantity() );
+                
                 CreateBillItemDTO billitem = new CreateBillItemDTO();
-                billitem.setProductId(product.getId());
-                billitem.setName(product.getName());
+                billitem.setProductId(product.getProductoId());
+                billitem.setName(product.getNombre());
                 billitem.setRequestedQuantity(item.getRequestedQuantity());
-                billitem.setPrice(product.getPrice());
+                billitem.setPrice(product.getPrecio());
                 billitem.setSubTotal(subTotal); 
 
                 return billitem;
@@ -143,6 +195,23 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         perceivedIva = totalWithoutIva * ivaRate;
         totalWithIva = totalWithoutIva + perceivedIva;
 
+        var transmitterDto = createFinalConsumerBillDTO.getTransmitter();
+        if (transmitterDto.getCompanyName() == null || transmitterDto.getCompanyName().trim().isEmpty()) {
+            transmitterDto.setCompanyName("Becky's Florist S.A. de C.V.");
+        }
+        if (transmitterDto.getCompanyDocument() == null || transmitterDto.getCompanyDocument().trim().isEmpty()) {
+            transmitterDto.setCompanyDocument("12345678-9");
+        }
+        if (transmitterDto.getCompanyAddress() == null || transmitterDto.getCompanyAddress().trim().isEmpty()) {
+            transmitterDto.setCompanyAddress("Av. Las Flores #123, San Salvador");
+        }
+        if (transmitterDto.getCompanyEmail() == null || transmitterDto.getCompanyEmail().trim().isEmpty()) {
+            transmitterDto.setCompanyEmail("facturacion@beckysflorist.com");
+        }
+        if (transmitterDto.getCompanyPhone() == null || transmitterDto.getCompanyPhone().trim().isEmpty()) {
+            transmitterDto.setCompanyPhone("2212-3456");
+        }
+
         //conversion de dto a entidad
         FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(
             createFinalConsumerBillDTO,
@@ -151,11 +220,6 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
             date,
             ivaRate,
             user.getFirstName() +" "+ user.getLastName(),
-            "Becky's Florist S.A. de C.V.",
-            "0614-987654-101-3",
-            "Av. Las Flores #123, San Salvador",
-            "facturacion@beckysflorist.com",
-            "2222-3333",
             0.0,
             0.0,
             totalWithoutIva, 
@@ -175,6 +239,17 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         //guardamos la factura
         billRepository.save(bill);
 
+        //disminucion de inventario
+        for(BillItem item : bill.getProducts()){
+            try{
+                NewProductDTO updatedProduct = getProductsByIds.decreaseStock(item.getProductId(), item.getRequestedQuantity());
+                System.out.println("Stock disminuido exitosamente para producto " + item.getProductId() + 
+                                  ". Stock actual: " + updatedProduct.getStockMaximo());
+            }catch(Exception e){
+                System.err.println("Error disminuyendo stock para producto " + item.getProductId() + ": " + e.getMessage());
+            }
+        }
+
         try {
 
             Path pdfPath = pdfInvoiceService.generateInvoicePdf(bill);
@@ -187,8 +262,18 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
         return FinalConsumerBillMapper.toShowBillDto(bill);
     }
 
+    public Optional<byte[]> getPdfByGenerationCode(String generationCode) {
+        return billRepository.findBygenerationCode(generationCode)
+            .flatMap(bill -> {
+                try {
+                    if (bill.getPdfPath() == null) return Optional.empty();
+                    Path path = Path.of(bill.getPdfPath());
+                    if (!Files.exists(path)) return Optional.empty();
+                    return Optional.of(Files.readAllBytes(path));
+                } catch (Exception e) {
+                    return Optional.empty();
+                }
+            });
+    }
+
 }
-
-
-
-

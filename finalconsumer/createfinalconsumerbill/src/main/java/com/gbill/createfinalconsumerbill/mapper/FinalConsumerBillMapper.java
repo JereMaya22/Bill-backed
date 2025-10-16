@@ -6,21 +6,28 @@ import java.util.stream.Collectors;
 
 import com.gbill.createfinalconsumerbill.model.BillItem;
 import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
+import com.gbill.createfinalconsumerbill.model.Receiver;
+import com.gbill.createfinalconsumerbill.model.Transmitter;
 import com.gbill.createfinalconsumerbill.modeldto.CreateBillItemRequestDTO;
 import com.gbill.createfinalconsumerbill.modeldto.CreateFinalConsumerBillDTO;
+import com.gbill.createfinalconsumerbill.modeldto.CreateReceiver;
+import com.gbill.createfinalconsumerbill.modeldto.CreateTransmitter;
 
 import shareddtos.billmodule.BillItem.BillItemDTO;
 import shareddtos.billmodule.BillItem.CreateBillItemDTO;
 import shareddtos.billmodule.bill.ShowBillDto;
+import shareddtos.billmodule.bill.ShowReceiver;
+import shareddtos.billmodule.bill.ShowTransmitter;
 
 
 public class FinalConsumerBillMapper {
     
-    public static FinalConsumerBill toEntity(CreateFinalConsumerBillDTO dto, String generationCode
-    , String controlNumber, LocalDateTime date, Double iva, String account,
-    String companyName, String companyDocument, String companyAddress, String companyEmail, String companyPhone,
+    public static FinalConsumerBill toEntity(CreateFinalConsumerBillDTO dto, String generationCode,
+    String controlNumber, LocalDateTime date, Double iva, String account,
     Double nonTaxedSales, Double exemptSales, Double taxedSales, Double perceivedIva,
     Double totalWithIva, List<CreateBillItemDTO> items, String pdfPath) {
+        Transmitter transmitter = TransmitterMapper.toEntity(dto.getTransmitter());
+        Receiver receiver = ReceiverMapper.toEntity(dto.getReceiver());
         return new FinalConsumerBill(
             null,
             generationCode,
@@ -28,16 +35,8 @@ public class FinalConsumerBillMapper {
             date,
             account,
             dto.getPaymentCondition(),
-            companyName,
-            companyDocument,
-            companyAddress,
-            companyEmail,
-            companyPhone,
-            dto.getCustomerName(),
-            dto.getCustomerDocument(),
-            dto.getCustomerAddress(),
-            dto.getCustomerEmail(),
-            dto.getCustomerPhone(),
+            transmitter,
+            receiver,
             items.stream().map(
                 billItem -> new BillItem(
                     null,
@@ -60,18 +59,12 @@ public class FinalConsumerBillMapper {
     }
 
     public static CreateFinalConsumerBillDTO toDTO(FinalConsumerBill finalConsumerBill) {
-       CreateFinalConsumerBillDTO consumerBillDTO = new CreateFinalConsumerBillDTO(
+        CreateTransmitter transmitterDTO = TransmitterMapper.toDTO(finalConsumerBill.getTransmitter());
+        CreateReceiver receiverDTO = ReceiverMapper.toDTO(finalConsumerBill.getReceiver());
+        return new CreateFinalConsumerBillDTO(
                 finalConsumerBill.getPaymentCondition(),
-                finalConsumerBill.getCompanyName(),
-                finalConsumerBill.getCompanyDocument(),
-                finalConsumerBill.getCompanyAddress(),
-                finalConsumerBill.getCompanyEmail(),
-                finalConsumerBill.getCompanyPhone(),
-                finalConsumerBill.getCustomerName(),
-                finalConsumerBill.getCustomerDocument(),
-                finalConsumerBill.getCustomerAddress(),
-                finalConsumerBill.getCustomerEmail(),
-                finalConsumerBill.getCustomerPhone(),
+                transmitterDTO,
+                receiverDTO,
                 finalConsumerBill.getProducts().stream().map(
                     billItem -> {
                         CreateBillItemRequestDTO requestDTO = new CreateBillItemRequestDTO();
@@ -83,46 +76,39 @@ public class FinalConsumerBillMapper {
                 finalConsumerBill.getWithheldIva()
             ); 
             
-        return consumerBillDTO;
     }
 
     public static ShowBillDto toShowBillDto(FinalConsumerBill finalConsumerBill) {
-        ShowBillDto showBillDto = new ShowBillDto();
-        showBillDto.setGenerationCode(finalConsumerBill.getGenerationCode());
-        showBillDto.setControlNumber(finalConsumerBill.getControlNumber());
-        showBillDto.setBillGenerationDate(finalConsumerBill.getBillGenerationDate());
-        showBillDto.setAccount(finalConsumerBill.getAccount());
-        showBillDto.setPaymentCondition(finalConsumerBill.getPaymentCondition());
-        showBillDto.setCompanyName(finalConsumerBill.getCompanyName());
-        showBillDto.setCompanyDocument(finalConsumerBill.getCompanyDocument());
-        showBillDto.setCompanyAddress(finalConsumerBill.getCompanyAddress());
-        showBillDto.setCompanyEmail(finalConsumerBill.getCompanyEmail());
-        showBillDto.setCompanyPhone(finalConsumerBill.getCompanyPhone());
-        showBillDto.setCustomerName(finalConsumerBill.getCustomerName());
-        showBillDto.setCustomerDocument(finalConsumerBill.getCustomerDocument());
-        showBillDto.setCustomerAddress(finalConsumerBill.getCustomerAddress());
-        showBillDto.setCustomerEmail(finalConsumerBill.getCustomerEmail());
-        showBillDto.setCustomerPhone(finalConsumerBill.getCustomerPhone());
-        showBillDto.setProducts(finalConsumerBill.getProducts().stream().map(
-            productos -> {
-                BillItemDTO billItemDTO = new BillItemDTO();
-                billItemDTO.setId(productos.getId());
-                        billItemDTO.setProductId(productos.getProductId());
-                        billItemDTO.setName(productos.getName());
-                        billItemDTO.setRequestedQuantity(productos.getRequestedQuantity());
-                        billItemDTO.setPrice(productos.getPrice());
-                        billItemDTO.setSubTotal(productos.getSubTotal());
-                        return billItemDTO;
-            }
-        ).collect(Collectors.toList()));
-        showBillDto.setNonTaxedSales(finalConsumerBill.getNonTaxedSales());
-        showBillDto.setExemptSales(finalConsumerBill.getExemptSales());
-        showBillDto.setTaxedSales(finalConsumerBill.getTaxedSales());
-        showBillDto.setIva(finalConsumerBill.getIva());
-        showBillDto.setPerceivedIva(finalConsumerBill.getPerceivedIva());
-        showBillDto.setWithheldIva(finalConsumerBill.getWithheldIva());
-        showBillDto.setTotalWithIva(finalConsumerBill.getTotalWithIva());
-        return showBillDto;
+        ShowReceiver receiverDTO = ReceiverMapper.toShowReceiverDto(finalConsumerBill.getReceiver());
+        ShowTransmitter transmitterDTO = TransmitterMapper.toShowTransmitterDto(finalConsumerBill.getTransmitter());
+        return new ShowBillDto(
+            finalConsumerBill.getGenerationCode(),
+            finalConsumerBill.getControlNumber(),
+            finalConsumerBill.getBillGenerationDate(),
+            finalConsumerBill.getAccount(),
+            finalConsumerBill.getPaymentCondition(),
+            transmitterDTO,
+            receiverDTO,
+            finalConsumerBill.getProducts().stream().map(
+                productos -> {
+                    BillItemDTO billItemDTO = new BillItemDTO();
+                    billItemDTO.setId(productos.getId());
+                            billItemDTO.setProductId(productos.getProductId());
+                            billItemDTO.setName(productos.getName());
+                            billItemDTO.setRequestedQuantity(productos.getRequestedQuantity());
+                            billItemDTO.setPrice(productos.getPrice());
+                            billItemDTO.setSubTotal(productos.getSubTotal());
+                            return billItemDTO;
+                }
+            ).collect(Collectors.toList()),
+            finalConsumerBill.getNonTaxedSales(),
+            finalConsumerBill.getExemptSales(),
+            finalConsumerBill.getTaxedSales(),
+            finalConsumerBill.getIva(),
+            finalConsumerBill.getPerceivedIva(),
+            finalConsumerBill.getWithheldIva(),
+            finalConsumerBill.getTotalWithIva()
+        );
     }
 }
 
