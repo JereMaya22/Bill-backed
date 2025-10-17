@@ -14,22 +14,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.gbill.createfinalconsumerbill.mapper.FinalConsumerBillMapper;
-import com.gbill.createfinalconsumerbill.model.FinalConsumerBill;
-import com.gbill.createfinalconsumerbill.model.BillItem;
-import com.gbill.createfinalconsumerbill.model.Payment;
+import com.gbill.createfinalconsumerbill.model.*;
 import com.gbill.createfinalconsumerbill.repository.BillRepository;
 
-import com.gbill.createfinalconsumerbill.clients.GetProductsByIds;
-import com.gbill.createfinalconsumerbill.clients.ValidationService;
-import com.gbill.createfinalconsumerbill.clients.PromotionClient;
-
+import com.gbill.createfinalconsumerbill.clients.*;
 import com.gbill.createfinalconsumerbill.modeldto.*;
-import com.gbill.createfinalconsumerbill.modeldto.payment.PaymentDTO;
+import com.gbill.createfinalconsumerbill.modeldto.payment.*;
 import com.gbill.createfinalconsumerbill.modeldto.promortion.*;
 
-import com.gbill.createfinalconsumerbill.exception.ConnectionFaildAuthenticationException;
-import com.gbill.createfinalconsumerbill.exception.InvalidTokenException;
-import com.gbill.createfinalconsumerbill.exception.InvalidUserException;
+import com.gbill.createfinalconsumerbill.exception.*;
+import com.gbill.createfinalconsumerbill.service.payment.PaymentService;
 
 import feign.FeignException;
 import shareddtos.usersmodule.auth.SimpleUserDto;
@@ -44,19 +38,22 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
     private final GetProductsByIds getProductsByIds;
     private final PdfInvoiceService pdfInvoiceService;
     private final PromotionClient promotionClient;
+    private final PaymentService paymentService;
 
     public FinalConsumerBillService(
         BillRepository billRepository,
         ValidationService validationService,
         GetProductsByIds getProductsByIds,
         PdfInvoiceService pdfInvoiceService,
-        PromotionClient promotionClient
+        PromotionClient promotionClient,
+        PaymentService paymentService
     ) {
         this.billRepository = billRepository;
         this.validationService = validationService;
         this.getProductsByIds = getProductsByIds;
         this.pdfInvoiceService = pdfInvoiceService;
         this.promotionClient = promotionClient;
+        this.paymentService = paymentService;
     }
 
     @Override
@@ -142,7 +139,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
                     return dto;
                 }).collect(Collectors.toList());
 
-        // === Promotions ===
+        // === PROMOCIONES ===
         Boolean promotionApplied = false;
         String promotionCode = null;
         String promotionName = null;
@@ -233,27 +230,48 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
             i.setFinalConsumerBill(bill);
         });
 
-        // === Integración del pago ===
+        // === INTEGRACIÓN DEL PAGO ===
         PaymentDTO paymentDto = createFinalConsumerBillDTO.getPayment();
+        String paymentCondition = createFinalConsumerBillDTO.getPaymentCondition();
 
-        if (paymentDto != null && "TARJETA".equalsIgnoreCase(paymentDto.getPaymentType())) {
-            if (paymentDto.getAuthorizationCode() == null || paymentDto.getAuthorizationCode().isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La tarjeta no fue validada");
-            }
+        if (paymentDto == null) {
+            paymentDto = new PaymentDTO();
+        }
 
+        // 🔹 Si no viene paymentType, se hereda del paymentCondition
+        if (paymentDto.getPaymentType() == null && paymentCondition != null) {
+            paymentDto.setPaymentType(paymentCondition.toUpperCase());
+        }
+
+        // === EFECTIVO ===
+        if ("EFECTIVO".equalsIgnoreCase(paymentDto.getPaymentType())) {
             Payment payment = new Payment();
-            payment.setPaymentType("TARJETA");
-            payment.setCardType(paymentDto.getCardType());
-            payment.setMaskedCardNumber(paymentDto.getMaskedCardNumber());
-            payment.setCardHolder(paymentDto.getCardHolder());
-            payment.setAuthorizationCode(paymentDto.getAuthorizationCode());
+            payment.setPaymentType("EFECTIVO");
             payment.setBill(bill);
             bill.setPayment(payment);
         }
 
-        if (paymentDto != null && "EFECTIVO".equalsIgnoreCase(paymentDto.getPaymentType())) {
+        // === TARJETA ===
+        else if ("TARJETA".equalsIgnoreCase(paymentDto.getPaymentType())) {
+            CardValidationRequest validationReq = new CardValidationRequest(
+                paymentDto.getMaskedCardNumber(),
+                paymentDto.getCardHolder(),
+                null,
+                null
+            );
+
+            CardValidationResponse validation = paymentService.validateCard(validationReq);
+
+            if (!validation.isValid()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validation.getMessage());
+            }
+
             Payment payment = new Payment();
-            payment.setPaymentType("EFECTIVO");
+            payment.setPaymentType("TARJETA");
+            payment.setCardType(validation.getCardType());
+            payment.setMaskedCardNumber(validation.getMaskedCardNumber());
+            payment.setCardHolder(paymentDto.getCardHolder());
+            payment.setAuthorizationCode(validation.getAuthorizationCode());
             payment.setBill(bill);
             bill.setPayment(payment);
         }
