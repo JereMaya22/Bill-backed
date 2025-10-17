@@ -13,11 +13,17 @@ public class Config {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**") // Permitir todas las rutas
-                        .allowedOrigins("*") // Permitir cualquier origen
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Métodos permitidos
-                        .allowedHeaders("*") // Permitir cualquier encabezado
-                        .allowCredentials(false); // No permitir credenciales
+                registry.addMapping("/**")
+                        // 🔹 Dominios permitidos (no se puede usar '*')
+                        .allowedOrigins(
+                            "http://localhost:4200",
+                            "http://127.0.0.1:4200",
+                            "https://bill.beckysflorist.site"
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        // 🔹 Permitir credenciales (tokens, cookies, etc.)
+                        .allowCredentials(true);
             }
         };
     }
