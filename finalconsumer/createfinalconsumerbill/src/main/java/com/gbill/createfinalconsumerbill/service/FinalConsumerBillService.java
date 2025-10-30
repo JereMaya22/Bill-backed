@@ -35,7 +35,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
 
     private final BillRepository billRepository;
     private final ValidationService validationService;
-    private final GetProductsByIds getProductsByIds;
+    private final ProductsClient getProductsByIds;
     private final PdfInvoiceService pdfInvoiceService;
     private final PromotionClient promotionClient;
     private final PaymentService paymentService;
@@ -43,7 +43,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
     public FinalConsumerBillService(
         BillRepository billRepository,
         ValidationService validationService,
-        GetProductsByIds getProductsByIds,
+        ProductsClient getProductsByIds,
         PdfInvoiceService pdfInvoiceService,
         PromotionClient promotionClient,
         PaymentService paymentService

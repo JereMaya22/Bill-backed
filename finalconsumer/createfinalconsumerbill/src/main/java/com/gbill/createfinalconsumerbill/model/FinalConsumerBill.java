@@ -72,6 +72,11 @@ public class FinalConsumerBill {
     @OneToOne(mappedBy = "bill", cascade = CascadeType.ALL)
     private Payment payment;
 
+    //factura devuelta
+    private Boolean isReversed = false;
+    private String returnBillCode;
+    private String originBillCode;
+
     public FinalConsumerBill(
     Long id,
     String generationCode,
