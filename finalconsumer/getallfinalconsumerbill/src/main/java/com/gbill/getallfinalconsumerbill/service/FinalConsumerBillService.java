@@ -75,6 +75,4 @@ public class FinalConsumerBillService implements IFinalConsumerBillService{
                     "La factura con el codigo " + generationCode +" no se encontro"));
     }
 
-
-
 }

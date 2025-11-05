@@ -11,6 +11,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Entidad que representa un renglón (ítem) de la factura.
+ * Campos clave:
+ * - productId/name: referencia informativa al producto en catálogo.
+ * - requestedQuantity/price/subTotal: montos calculados al momento de facturar.
+ * Relaciones:
+ * - ManyToOne hacia la factura (FinalConsumerBill) con carga LAZY para evitar overhead en listados.
+ */
 @Data
 @Entity
 @AllArgsConstructor
@@ -30,6 +38,7 @@ public class BillItem {
     private FinalConsumerBill finalConsumerBill;
 
     public Double sumSubtotal(Double price, int requestedQuantity){
+        // Cálculo simple de subtotal (sin descuentos/impuestos).
         return price * requestedQuantity;
     }
 

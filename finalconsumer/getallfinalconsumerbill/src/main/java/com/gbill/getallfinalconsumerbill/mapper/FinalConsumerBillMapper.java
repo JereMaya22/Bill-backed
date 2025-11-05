@@ -8,59 +8,80 @@ import com.gbill.getallfinalconsumerbill.model.Receiver;
 import com.gbill.getallfinalconsumerbill.model.Transmitter;
 
 import shareddtos.billmodule.BillItem.BillItemDTO;
+import shareddtos.billmodule.bill.PaymentDTO;
 import shareddtos.billmodule.bill.ShowBillDto;
 import shareddtos.billmodule.bill.ShowReceiver;
 import shareddtos.billmodule.bill.ShowTransmitter;
 
 public class FinalConsumerBillMapper {
 
-    public static ShowBillDto toDto(FinalConsumerBill finalConsumerBill) {
+    public static ShowBillDto toDto(FinalConsumerBill bill) {
         ShowBillDto dto = new ShowBillDto();
-        dto.setGenerationCode(finalConsumerBill.getGenerationCode());
-        dto.setControlNumber(finalConsumerBill.getControlNumber());
-        dto.setBillGenerationDate(finalConsumerBill.getBillGenerationDate());
-        dto.setAccount(finalConsumerBill.getAccount());
-        dto.setPaymentCondition(finalConsumerBill.getPaymentCondition());
-        dto.setTransmitter(toTransmitterDto(finalConsumerBill.getTransmitter()));
-        dto.setReceiver(toReceiverDto(finalConsumerBill.getReceiver()));
-        dto.setProducts(finalConsumerBill.getProducts()
-                .stream()
-                .map(FinalConsumerBillMapper::toBillItemDto)
-                .collect(Collectors.toList()));
 
-        dto.setNonTaxedSales(finalConsumerBill.getNonTaxedSales());
-        dto.setExemptSales(finalConsumerBill.getExemptSales());
-        dto.setTaxedSales(finalConsumerBill.getTaxedSales());
-        dto.setIva(finalConsumerBill.getIva());
-        dto.setPerceivedIva(finalConsumerBill.getPerceivedIva());
-        dto.setWithheldIva(finalConsumerBill.getWithheldIva());
-        dto.setTotalWithIva(finalConsumerBill.getTotalWithIva());
+        // ✅ Datos generales de la factura
+        dto.setGenerationCode(bill.getGenerationCode());
+        dto.setControlNumber(bill.getControlNumber());
+        dto.setBillGenerationDate(bill.getBillGenerationDate());
+        dto.setAccount(bill.getAccount());
+        dto.setPaymentCondition(bill.getPaymentCondition());
 
-        // 🔸 Nuevos campos añadidos en tu ShowBillDto
-        dto.setPromotionApplied(finalConsumerBill.getPromotionApplied());
-        dto.setPromotionCode(finalConsumerBill.getPromotionCode());
-        dto.setPromotionName(finalConsumerBill.getPromotionName());
-        dto.setPromotionDiscount(finalConsumerBill.getPromotionDiscount());
-        dto.setProductsWithPromotion(finalConsumerBill.getProductsWithPromotion());
+        // ✅ Transmitter (emisor)
+        dto.setTransmitter(toTransmitterDto(bill.getTransmitter()));
 
-        // 🔸 Y el pago si existe
-        if (finalConsumerBill.getPayment() != null) {
-            shareddtos.billmodule.bill.PaymentDTO paymentDto = new shareddtos.billmodule.bill.PaymentDTO();
-            paymentDto.setPaymentType(finalConsumerBill.getPayment().getPaymentType());
-            paymentDto.setCardType(finalConsumerBill.getPayment().getCardType());
-            paymentDto.setMaskedCardNumber(finalConsumerBill.getPayment().getMaskedCardNumber());
-            paymentDto.setCardHolder(finalConsumerBill.getPayment().getCardHolder());
-            paymentDto.setAuthorizationCode(finalConsumerBill.getPayment().getAuthorizationCode());
+        // ✅ Receiver (receptor)
+        dto.setReceiver(toReceiverDto(bill.getReceiver()));
+
+        // ✅ Productos
+        if (bill.getProducts() != null) {
+            dto.setProducts(
+                bill.getProducts()
+                    .stream()
+                    .map(FinalConsumerBillMapper::toBillItemDto)
+                    .collect(Collectors.toList())
+            );
+        }
+
+        // ✅ Totales
+        dto.setNonTaxedSales(bill.getNonTaxedSales());
+        dto.setExemptSales(bill.getExemptSales());
+        dto.setTaxedSales(bill.getTaxedSales());
+        dto.setIva(bill.getIva());
+        dto.setPerceivedIva(bill.getPerceivedIva());
+        dto.setWithheldIva(bill.getWithheldIva());
+        dto.setTotalWithIva(bill.getTotalWithIva());
+
+        // ✅ Promociones
+        dto.setPromotionApplied(bill.getPromotionApplied());
+        dto.setPromotionCode(bill.getPromotionCode());
+        dto.setPromotionName(bill.getPromotionName());
+        dto.setPromotionDiscount(bill.getPromotionDiscount());
+        dto.setProductsWithPromotion(bill.getProductsWithPromotion());
+
+        // ✅ Pago
+        if (bill.getPayment() != null) {
+            PaymentDTO paymentDto = new PaymentDTO();
+            paymentDto.setPaymentType(bill.getPayment().getPaymentType());
+            paymentDto.setCardType(bill.getPayment().getCardType());
+            paymentDto.setMaskedCardNumber(bill.getPayment().getMaskedCardNumber());
+            paymentDto.setCardHolder(bill.getPayment().getCardHolder());
+            paymentDto.setAuthorizationCode(bill.getPayment().getAuthorizationCode());
             dto.setPayment(paymentDto);
         }
+
+        // ✅ Campos de factura devuelta (reversión)
+        dto.setIsReversed(bill.getIsReversed());
+        dto.setReturnBillCode(bill.getReturnBillCode());
+        dto.setOriginBillCode(bill.getOriginBillCode());
 
         return dto;
     }
 
+    // ============================
+    // Métodos auxiliares
+    // ============================
+
     private static ShowTransmitter toTransmitterDto(Transmitter transmitter) {
-        if (transmitter == null) {
-            return null;
-        }
+        if (transmitter == null) return null;
         return new ShowTransmitter(
             transmitter.getName(),
             transmitter.getDocument(),
@@ -71,9 +92,7 @@ public class FinalConsumerBillMapper {
     }
 
     private static ShowReceiver toReceiverDto(Receiver receiver) {
-        if (receiver == null) {
-            return null;
-        }
+        if (receiver == null) return null;
         return new ShowReceiver(
             receiver.getName(),
             receiver.getLastName(),
@@ -85,16 +104,14 @@ public class FinalConsumerBillMapper {
     }
 
     private static BillItemDTO toBillItemDto(BillItem billItem) {
-        if (billItem == null) {
-            return null;
-        }
-        BillItemDTO billItemDTO = new BillItemDTO();
-        billItemDTO.setId(billItem.getId());
-        billItemDTO.setProductId(billItem.getProductId());
-        billItemDTO.setName(billItem.getName());
-        billItemDTO.setRequestedQuantity(billItem.getRequestedQuantity());
-        billItemDTO.setPrice(billItem.getPrice());
-        billItemDTO.setSubTotal(billItem.getSubTotal());
-        return billItemDTO;
+        if (billItem == null) return null;
+        BillItemDTO dto = new BillItemDTO();
+        dto.setId(billItem.getId());
+        dto.setProductId(billItem.getProductId());
+        dto.setName(billItem.getName());
+        dto.setRequestedQuantity(billItem.getRequestedQuantity());
+        dto.setPrice(billItem.getPrice());
+        dto.setSubTotal(billItem.getSubTotal());
+        return dto;
     }
 }

@@ -18,6 +18,16 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+/**
+ * Entidad que representa una factura a consumidor final.
+ * Componentes principales:
+ * - Emisor/Receptor: relaciones 1-1 con persistencia controlada por cascadas.
+ * - Items: relación 1-N con eliminación huérfana para mantener consistencia.
+ * - Totales/Impuestos: montos calculados en el service.
+ * - PDF: ruta a archivo generado post-persistencia.
+ * - Promociones: metadatos de promos aplicadas y productos afectados.
+ * - Devoluciones: flags/códigos para enlazar factura original y de reemplazo.
+ */
 @Data
 @Entity
 @NoArgsConstructor

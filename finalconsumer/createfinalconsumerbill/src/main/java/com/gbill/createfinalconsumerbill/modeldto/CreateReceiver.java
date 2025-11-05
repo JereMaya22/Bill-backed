@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateReceiver {
+    private Long customerId;  // ← NUEVO: Para recibir el ID del cliente
     private String customerName;
     private String customerLastname;
     @Pattern(regexp = "^\\d{8}-\\d$", message = "El formato del documento del cliente debe ser 99999999-9")

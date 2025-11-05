@@ -13,6 +13,15 @@ import com.gbill.createfinalconsumerbill.service.FinalConsumerBillService;
 import jakarta.validation.Valid;
 import shareddtos.billmodule.bill.ShowBillDto;
 
+/**
+ * REST controller para la gestión de facturas a consumidor final.
+ * Responsabilidades principales:
+ * - Exponer endpoint para creación de factura con validaciones en service.
+ * - Exponer endpoint para descarga de PDF previamente generado.
+ * Consideraciones:
+ * - El token puede venir en header o cookie; se prioriza cookie si está presente.
+ * - La transformación de DTOs y la lógica de negocio no viven aquí; se delega al service.
+ */
 @RestController
 @RequestMapping("/api/final-consumer")
 public class FinalConsumerBillController {
@@ -23,32 +32,33 @@ public class FinalConsumerBillController {
         this.billService = billService;
     }
 
+    /**
+     * Crea una factura a consumidor final.
+     * Notas de implementación:
+     * - Usa @Valid para validar constraints declarados en el DTO.
+     * - El token se toma de cookie si existe, en su defecto de header.
+     * - La respuesta incluye los datos calculados por el service (totales, promos, etc.).
+     */
     @PostMapping("/create")
     public ResponseEntity<ShowBillDto> createFinalConsumerBill(
             @Valid @RequestBody CreateFinalConsumerBillDTO createFinalConsumerBillDTO,
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @CookieValue(value = "jwt", required = false) String cookieToken // 👈 nombre de tu cookie
+            @RequestHeader(value = "Authorization", required = false) String tokenHeader,
+            @CookieValue(value = "Authorization", required = false) String tokenCookie
     ) {
-        //Determinar de dónde viene el token
-        String token = null;
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
-        } else if (cookieToken != null && !cookieToken.isEmpty()) {
-            token = cookieToken;
-        }
-
-        // Validar que exista
-        if (token == null || token.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(null);
-        }
+        String token = (tokenCookie != null) ? tokenCookie : tokenHeader;
 
         //Llamar al service como siempre
         ShowBillDto showBillDto = billService.createFinalConsumerBill(createFinalConsumerBillDTO, token);
         return ResponseEntity.status(HttpStatus.CREATED).body(showBillDto);
     }
 
+    /**
+     * Descarga el PDF de una factura previamente generada.
+     * Comportamiento:
+     * - Si existe el archivo, lo devuelve con cabeceras para descarga.
+     * - Si no existe, retorna 404 sin cuerpo.
+     */
     @GetMapping("/{generationCode}/pdf")
     public ResponseEntity<byte[]> downloadPdf(@PathVariable String generationCode) {
         return billService.getPdfByGenerationCode(generationCode)

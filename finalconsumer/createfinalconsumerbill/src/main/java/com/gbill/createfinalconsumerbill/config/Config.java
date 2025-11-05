@@ -14,7 +14,7 @@ public class Config {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        // 🔹 Dominios permitidos (no se puede usar '*')
+                        // Dominios permitidos (no se puede usar '*')
                         .allowedOrigins(
                             "http://localhost:4200",
                             "http://127.0.0.1:4200",
@@ -22,7 +22,7 @@ public class Config {
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        // 🔹 Permitir credenciales (tokens, cookies, etc.)
+                        // Permitir credenciales (tokens, cookies, etc.)
                         .allowCredentials(true);
             }
         };

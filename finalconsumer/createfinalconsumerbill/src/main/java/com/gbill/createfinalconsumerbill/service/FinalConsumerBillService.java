@@ -30,6 +30,18 @@ import shareddtos.usersmodule.auth.SimpleUserDto;
 import shareddtos.billmodule.BillItem.CreateBillItemDTO;
 import shareddtos.billmodule.bill.ShowBillDto;
 
+/**
+ * Servicio central para la creación de facturas a consumidor final y utilidades asociadas.
+ * Responsabilidades:
+ * - Validar sesión/token con el servicio de validación.
+ * - Enriquecer datos de receptor/emisor (defaults y/o consulta a MS de clientes).
+ * - Resolver productos, calcular subtotales/IVA y aplicar promociones.
+ * - Integrar pagos (efectivo/tarjeta) y validar tarjeta cuando aplique.
+ * - Persistir la factura y generar el PDF.
+ * Consideraciones:
+ * - Se prioriza robustez: try/catch alrededor de integraciones externas.
+ * - Promos y stock fallan en suave (stderr) para no bloquear el flujo principal.
+ */
 @Service
 public class FinalConsumerBillService implements IFinalConsumerBillService {
 
@@ -39,6 +51,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
     private final PdfInvoiceService pdfInvoiceService;
     private final PromotionClient promotionClient;
     private final PaymentService paymentService;
+    private final Clientsclient clientsClient;
 
     public FinalConsumerBillService(
         BillRepository billRepository,
@@ -46,7 +59,8 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
         ProductsClient getProductsByIds,
         PdfInvoiceService pdfInvoiceService,
         PromotionClient promotionClient,
-        PaymentService paymentService
+        PaymentService paymentService,
+        Clientsclient clientsClient
     ) {
         this.billRepository = billRepository;
         this.validationService = validationService;
@@ -54,6 +68,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
         this.pdfInvoiceService = pdfInvoiceService;
         this.promotionClient = promotionClient;
         this.paymentService = paymentService;
+        this.clientsClient = clientsClient;
     }
 
     @Override
@@ -79,6 +94,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
         if (createFinalConsumerBillDTO == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
 
+
         // === Default receiver and transmitter ===
         CreateReceiver receiverDto = createFinalConsumerBillDTO.getReceiver();
         if (receiverDto == null) {
@@ -90,6 +106,36 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
             receiverDto.setCustomerEmail("consumidor@example.com");
             receiverDto.setCustomerPhone("9999-9999");
             createFinalConsumerBillDTO.setReceiver(receiverDto);
+        } else if (receiverDto.getCustomerId() != null) {
+            // Si viene el ID del cliente, obtener los datos del microservicio
+            try {
+                Receiver clientReceiver = clientsClient.getReceiverById(receiverDto.getCustomerId());
+                if (clientReceiver == null) {
+                    throw new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, 
+                        "Cliente con ID " + receiverDto.getCustomerId() + " no encontrado"
+                    );
+                }
+                // Rellenar los campos del receiverDto con los datos obtenidos
+                receiverDto.setCustomerName(clientReceiver.getName());
+                receiverDto.setCustomerLastname(clientReceiver.getLastName());
+                receiverDto.setCustomerDocument(clientReceiver.getDocument() != null ? clientReceiver.getDocument() : "99999999-9");
+                receiverDto.setCustomerAddress(receiverDto.getCustomerAddress() != null ? receiverDto.getCustomerAddress() : "Dirección no especificada");
+                receiverDto.setCustomerEmail(clientReceiver.getEmail());
+                receiverDto.setCustomerPhone(clientReceiver.getPhone());
+            } catch (FeignException.NotFound e) {
+                throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, 
+                    "Cliente con ID " + receiverDto.getCustomerId() + " no encontrado"
+                );
+            } catch (FeignException e) {
+                throw new ConnectionFaildAuthenticationException("Error comunicándose con el servicio de clientes: " + e.getMessage());
+            } catch (Exception e) {
+                throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, 
+                    "Error al obtener datos del cliente: " + e.getMessage()
+                );
+            }
         }
 
         if (createFinalConsumerBillDTO.getTransmitter() == null) {
@@ -128,6 +174,18 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
         List<CreateBillItemDTO> productItem = createFinalConsumerBillDTO.getProducts().stream()
                 .map(item -> {
                     NewProductDTO product = productMap.get(item.getProductId());
+                    if (product == null) {
+                        throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, 
+                            "Producto con ID " + item.getProductId() + " no encontrado"
+                        );
+                    }
+                    if (product.getPrecio() == null) {
+                        throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST, 
+                            "Producto con ID " + item.getProductId() + " no tiene precio definido"
+                        );
+                    }
                     double subTotal = new BillItem().sumSubtotal(product.getPrecio(), item.getRequestedQuantity());
 
                     CreateBillItemDTO dto = new CreateBillItemDTO();

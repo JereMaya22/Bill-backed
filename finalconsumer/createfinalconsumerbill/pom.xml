@@ -79,7 +79,7 @@
 		<dependency>
 			<groupId>com.github.xsismadn3ss</groupId>
 			<artifactId>shared-dtos</artifactId>
-			<version>ff8d76c2dd228b410f970f54a57be7ff43f20ade</version>
+			<version>8907386214f4e62761969661d12b9f03172c8080</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
