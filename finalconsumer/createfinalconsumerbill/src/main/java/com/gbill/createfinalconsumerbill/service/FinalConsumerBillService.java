@@ -32,15 +32,7 @@ import shareddtos.billmodule.bill.ShowBillDto;
 
 /**
  * Servicio central para la creación de facturas a consumidor final y utilidades asociadas.
- * Responsabilidades:
- * - Validar sesión/token con el servicio de validación.
- * - Enriquecer datos de receptor/emisor (defaults y/o consulta a MS de clientes).
- * - Resolver productos, calcular subtotales/IVA y aplicar promociones.
- * - Integrar pagos (efectivo/tarjeta) y validar tarjeta cuando aplique.
- * - Persistir la factura y generar el PDF.
- * Consideraciones:
- * - Se prioriza robustez: try/catch alrededor de integraciones externas.
- * - Promos y stock fallan en suave (stderr) para no bloquear el flujo principal.
+ * Incluye cálculo de totales con la Opción B (el descuento se aplica antes del IVA).
  */
 @Service
 public class FinalConsumerBillService implements IFinalConsumerBillService {
@@ -107,7 +99,6 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
             receiverDto.setCustomerPhone("9999-9999");
             createFinalConsumerBillDTO.setReceiver(receiverDto);
         } else if (receiverDto.getCustomerId() != null) {
-            // Si viene el ID del cliente, obtener los datos del microservicio
             try {
                 Receiver clientReceiver = clientsClient.getReceiverById(receiverDto.getCustomerId());
                 if (clientReceiver == null) {
@@ -116,7 +107,6 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
                         "Cliente con ID " + receiverDto.getCustomerId() + " no encontrado"
                     );
                 }
-                // Rellenar los campos del receiverDto con los datos obtenidos
                 receiverDto.setCustomerName(clientReceiver.getName());
                 receiverDto.setCustomerLastname(clientReceiver.getLastName());
                 receiverDto.setCustomerDocument(clientReceiver.getDocument() != null ? clientReceiver.getDocument() : "99999999-9");
@@ -253,13 +243,18 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
             }
         }
 
-        // === Totals ===
+        // === Totals (OPCIÓN B) ===
         Double totalWithoutIva = productItem.stream()
                 .mapToDouble(CreateBillItemDTO::getSubTotal)
                 .sum();
 
-        Double perceivedIva = totalWithoutIva * ivaRate;
-        Double totalWithIva = totalWithoutIva + perceivedIva;
+        // 🔹 Aplicar descuento total antes del IVA
+        Double totalWithDiscount = totalWithoutIva - totalPromotionDiscount;
+        if (totalWithDiscount < 0) totalWithDiscount = 0.0;
+
+        // 🔹 Calcular IVA solo sobre el monto ya descontado
+        Double perceivedIva = totalWithDiscount * ivaRate;
+        Double totalWithIva = totalWithDiscount + perceivedIva;
 
         // === Build entity ===
         FinalConsumerBill bill = FinalConsumerBillMapper.toEntity(
@@ -288,7 +283,7 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
             i.setFinalConsumerBill(bill);
         });
 
-        // === INTEGRACIÓN DEL PAGO ===
+        // === Pago e integración ===
         PaymentDTO paymentDto = createFinalConsumerBillDTO.getPayment();
         String paymentCondition = createFinalConsumerBillDTO.getPaymentCondition();
 
@@ -296,21 +291,16 @@ public class FinalConsumerBillService implements IFinalConsumerBillService {
             paymentDto = new PaymentDTO();
         }
 
-        // 🔹 Si no viene paymentType, se hereda del paymentCondition
         if (paymentDto.getPaymentType() == null && paymentCondition != null) {
             paymentDto.setPaymentType(paymentCondition.toUpperCase());
         }
 
-        // === EFECTIVO ===
         if ("EFECTIVO".equalsIgnoreCase(paymentDto.getPaymentType())) {
             Payment payment = new Payment();
             payment.setPaymentType("EFECTIVO");
             payment.setBill(bill);
             bill.setPayment(payment);
-        }
-
-        // === TARJETA ===
-        else if ("TARJETA".equalsIgnoreCase(paymentDto.getPaymentType())) {
+        } else if ("TARJETA".equalsIgnoreCase(paymentDto.getPaymentType())) {
             CardValidationRequest validationReq = new CardValidationRequest(
                 paymentDto.getMaskedCardNumber(),
                 paymentDto.getCardHolder(),
